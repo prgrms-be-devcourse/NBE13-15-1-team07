@@ -25,12 +25,11 @@ public class MenuService {
         this.categoryRepository = categoryRepository;
     }
 
-    // [1] A07: 신규 메뉴 등록 [2026.11.02/안형빈]
+    // [1] A08: 신규 메뉴 등록 [2026.11.02/안형빈]
     public MenuResponse createMenu(MenuRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. id=" + request.getCategoryId()));
 
-        // Menu 생성자 시그니처에 맞춰 category를 첫 번째 파라미터로 수정
         Menu menu = new Menu(
                 category,
                 request.getName(),
@@ -42,7 +41,7 @@ public class MenuService {
         return MenuResponse.from(savedMenu);
     }
 
-    // [2] A08: 메뉴 단건 상세 조회 [2026.11.02/안형빈]
+    // [2] A07: 메뉴 단건 상세 조회 [2026.11.02/안형빈]
     @Transactional(readOnly = true)
     public MenuResponse getMenuById(Long id) {
         Menu menu = menuRepository.findById(id)
@@ -77,6 +76,7 @@ public class MenuService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. id=" + request.getCategoryId()));
 
+        // Category, Name, Price, Description 순서 일치[cite: 10]
         menu.update(category, request.getName(), request.getPrice(), request.getDescription());
         return MenuResponse.from(menu);
     }
@@ -88,17 +88,15 @@ public class MenuService {
         menuRepository.delete(menu);
     }
 
-    // [7] A21: 메뉴 판매 상태 토글(ON/OFF) [2026.11.02/안형빈]
-    public MenuResponse toggleAvailability(Long id) {
-        Menu menu = menuRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메뉴입니다. id=" + id));
-
-        menu.changeAvailability(!menu.isAvailable());
-        return MenuResponse.from(menu);
+    // [7] A19: 판매 중(available=true) 메뉴 목록 조회 추가 [2026.11.02/안형빈]
+    @Transactional(readOnly = true)
+    public List<MenuResponse> getAvailableMenus() {
+        return menuRepository.findByAvailableTrueOrderByIdAsc().stream()
+                .map(MenuResponse::from)
+                .toList();
     }
 
     // [8] A20: 메뉴명 키워드 검색 [2026.11.02/안형빈]
-    // [추가] 쿼리로 검색된 결과를, DTO로 변환하는 단순 읽기이므로, readOnly = true 설정
     @Transactional(readOnly = true)
     public List<MenuResponse> searchMenus(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -107,5 +105,14 @@ public class MenuService {
         return menuRepository.search(keyword).stream()
                 .map(MenuResponse::from)
                 .toList();
+    }
+
+    // [9] A21: 메뉴 판매 상태 변경 [2026.11.02/안형빈]
+    public MenuResponse updateAvailability(Long id, boolean available) {
+        Menu menu = menuRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메뉴입니다. id=" + id));
+
+        menu.changeAvailability(available);
+        return MenuResponse.from(menu);
     }
 }
