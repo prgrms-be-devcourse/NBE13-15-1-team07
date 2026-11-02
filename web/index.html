@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Grids & Circle 원두 주문·메뉴 관리 실습 화면">
+  <title>Grids & Circle · 원두 주문</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="js/config.js"></script>
+  <script defer src="js/domain.js"></script>
+  <script defer src="js/api.js"></script>
+  <script defer src="js/demo.js"></script>
+  <script defer src="js/project-v2.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/management-v2.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 이동</a>
+  <header class="site-header wrap">
+    <a class="brand" href="#main" aria-label="Grids & Circle 본문으로"><span class="brand-mark" aria-hidden="true">g<span>&</span>c</span><span>Grids & Circle<small>COFFEE BEAN SHOP</small></span></a>
+    <div class="header-actions"><span id="connection-status" class="connection">연결 확인 중</span><button id="open-settings" class="button subtle" type="button">연결 설정</button></div>
+  </header>
+  <div id="mode-banner" class="mode-banner" role="status" hidden></div>
+  <main id="main" class="wrap">
+    <nav class="tabs" role="tablist" aria-label="원두 상점 메뉴">
+      <button id="tab-shop" role="tab" aria-selected="true" aria-controls="panel-shop" type="button">원두 주문</button>
+      <button id="tab-orders" role="tab" aria-selected="false" aria-controls="panel-orders" tabindex="-1" type="button">주문 조회</button>
+      <button id="tab-admin" role="tab" aria-selected="false" aria-controls="panel-admin" tabindex="-1" type="button">상점 관리 · 통계</button>
+    </nav>
+    <p id="global-message" class="notice" role="status" aria-live="polite" hidden></p>
+
+    <section id="panel-shop" role="tabpanel" aria-labelledby="tab-shop">
+      <div class="hero"><div><p class="eyebrow">A SMALL DAILY RITUAL</p><h1>오늘의 커피를<br>골라보세요.</h1><p>좋아하는 원두를 담고 배송 정보를 입력하면 주문이 접수됩니다.</p></div><div class="hero-note"><span class="hero-clock" aria-hidden="true">14<span>:00</span></span><strong>서울 시각 오후 2시 마감</strong><p>14시 이전은 당일 배송 대상,<br>14시부터는 다음 날 배송 대상입니다.</p></div></div>
+      <div class="shop-layout">
+        <section class="catalog" aria-labelledby="catalog-heading">
+          <div class="section-heading"><div><p class="eyebrow">OUR COFFEE</p><h2 id="catalog-heading">원두 목록 <span id="menu-count" class="count">0종</span></h2></div><button id="reload-menus" type="button" class="button subtle small">목록 새로고침</button></div>
+          <form id="menu-search-form" class="catalog-search" novalidate>
+            <div class="grow"><label for="menu-keyword">메뉴명 검색</label><input id="menu-keyword" type="text" maxlength="100" placeholder="예: Columbia · 대소문자 구분"></div>
+            <button id="menu-search-submit" type="submit" class="button outline">검색</button>
+            <button id="clear-search" type="button" class="button subtle">초기화</button>
+          </form>
+          <label class="check-label" for="only-available"><input id="only-available" type="checkbox" checked> 판매 중인 메뉴만 보기</label>
+          <p class="hint catalog-hint">메뉴명에 검색어가 포함된 메뉴를 찾습니다. 판매 중지된 메뉴는 주문할 수 없습니다.</p>
+          <p id="menu-status" class="empty-state">원두 목록을 불러오고 있습니다.</p>
+          <div id="menu-grid" class="menu-grid"></div>
+        </section>
+        <aside class="checkout card" aria-labelledby="cart-heading">
+          <div class="section-heading"><h2 id="cart-heading">장바구니</h2><span id="cart-count" class="count">0개</span></div>
+          <p id="cart-empty" class="muted">원하는 원두를 장바구니에 담아주세요.</p>
+          <ul id="cart-items" class="cart-items"></ul>
+          <div class="price-row"><span>상품 합계</span><strong id="cart-total">0원</strong></div>
+          <p class="hint">배송비는 없습니다. 최종 주문 금액은 주문 결과에서 확인하세요.</p>
+          <form id="checkout-form" novalidate>
+            <label for="customer-email">이메일</label><input id="customer-email" name="email" type="text" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="100" autocomplete="email" placeholder="name@example.com" required>
+            <p class="hint">이메일은 name@example.com 형식으로 100자 이내로 입력해 주세요. 영문 대소문자는 모두 허용하며 공백은 사용할 수 없습니다.</p>
+            <label for="customer-address">배송 주소</label><input id="customer-address" name="address" type="text" maxlength="200" autocomplete="street-address" placeholder="도로명 주소와 상세 주소" required>
+            <label for="customer-postcode">우편번호</label><input id="customer-postcode" name="postcode" type="text" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" placeholder="숫자 5자리" required>
+            <p class="hint">같은 이메일·배송일의 주문은 함께 배송합니다. 먼저 접수한 주문과 주소·우편번호가 같아야 합니다.</p>
+            <p id="checkout-feedback" class="form-feedback" aria-live="polite"></p>
+            <button id="place-order" class="button primary full" type="submit" disabled>주문하기</button>
+          </form>
+          <div id="uncertain-actions" class="uncertain-actions" hidden><button id="check-uncertain" type="button" class="button outline full">주문 내역 확인하기</button><button id="acknowledge-uncertain" type="button" class="text-button">확인 후 주문 버튼 다시 사용</button></div>
+          <div id="order-success" class="success-box" hidden><strong id="success-title"></strong><p id="success-description"></p><button id="open-last-order" type="button" class="text-button">주문 상세 보기</button></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="panel-orders" role="tabpanel" aria-labelledby="tab-orders" hidden>
+      <div class="page-heading"><p class="eyebrow">YOUR ORDERS</p><h1>주문 내역을 확인하세요.</h1><p>주문할 때 사용한 이메일로 조회할 수 있습니다.</p></div>
+      <form id="lookup-form" class="search-form card" novalidate><div class="grow"><label for="lookup-email">주문 이메일</label><input id="lookup-email" type="text" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="100" placeholder="name@example.com" required></div><button id="lookup-submit" type="submit" class="button primary">주문 조회</button></form>
+      <p class="hint">주문할 때 입력한 이메일과 대소문자까지 같게 입력해 주세요.</p>
+      <p id="lookup-feedback" class="form-feedback" aria-live="polite"></p>
+      <div id="order-results" class="order-results"></div>
+    </section>
+
+    <section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" hidden>
+      <div class="page-heading"><p class="eyebrow">SHOP MANAGEMENT</p><h1>메뉴와 배송을 관리하세요.</h1><p>수업용 관리 화면입니다. 로그인이나 관리자 권한 검사는 포함하지 않습니다.</p></div>
+      <section class="card category-section" aria-labelledby="category-heading">
+        <div class="section-heading"><div><p class="eyebrow">CATEGORIES</p><h2 id="category-heading">카테고리 관리</h2></div><button id="reload-categories" type="button" class="button subtle small">목록 새로고침</button></div>
+        <form id="category-form" class="search-form" novalidate><div class="grow"><label for="category-name">카테고리명</label><input id="category-name" maxlength="30" placeholder="예: 싱글오리진" required></div><button id="save-category" type="submit" class="button primary">등록</button><button id="cancel-category-edit" type="button" class="button subtle" hidden>수정 취소</button></form>
+        <p class="hint">메뉴가 등록된 카테고리는 삭제할 수 없습니다. 삭제할 카테고리를 목록에서 선택한 뒤 한 번 더 확인합니다.</p><p id="category-feedback" class="form-feedback" aria-live="polite"></p><div id="category-list"></div>
+        <form id="category-filter-form" class="search-form" novalidate><div class="grow"><label for="category-filter">카테고리별 메뉴</label><select id="category-filter"><option value="">카테고리를 선택하세요</option></select></div><button id="category-filter-submit" type="submit" class="button outline">메뉴 조회</button></form><div id="category-menu-results" aria-live="polite"></div>
+      </section>
+      <div class="admin-layout">
+        <section class="card" aria-labelledby="editor-heading"><h2 id="editor-heading">새 메뉴 등록</h2><form id="menu-form" novalidate><label for="menu-category">카테고리</label><select id="menu-category" required><option value="">카테고리 목록을 불러오는 중</option></select><label for="menu-name">메뉴명</label><input id="menu-name" maxlength="100" required><label for="menu-price">가격</label><div class="input-suffix"><input id="menu-price" type="number" min="1" max="1000000" step="1" inputmode="numeric" required><span>원</span></div><label for="menu-description">설명</label><textarea id="menu-description" maxlength="300" rows="3" placeholder="메뉴 설명을 입력해 주세요. 비워도 됩니다."></textarea><p class="hint">메뉴명 1~100자, 가격 1~1,000,000원, 설명 300자 이내</p><p id="menu-feedback" class="form-feedback" aria-live="polite"></p><div class="button-row"><button id="save-menu" type="submit" class="button primary">메뉴 등록</button><button id="cancel-edit" type="button" class="button subtle" hidden>수정 취소</button></div></form></section>
+        <section class="card grow" aria-labelledby="admin-list-heading"><div class="section-heading"><h2 id="admin-list-heading">등록한 메뉴</h2><span class="hint">주문에 사용된 메뉴는 삭제할 수 없습니다.</span></div><div id="admin-menu-list" class="admin-menu-list"></div></section>
+      </div>
+      <section class="card delivery-section" aria-labelledby="delivery-heading"><div class="section-heading"><div><p class="eyebrow">READY TO SHIP</p><h2 id="delivery-heading">배송일별 주문 묶음</h2></div></div><form id="delivery-form" class="search-form" novalidate><div><label for="delivery-date">배송 대상일</label><input id="delivery-date" type="date" min="2000-01-01" max="2099-12-31" required></div><button id="delivery-submit" type="submit" class="button primary">배송 묶음 조회</button></form><p id="delivery-feedback" class="form-feedback" aria-live="polite"></p><div id="delivery-results" class="delivery-results"></div></section>
+      <section class="card delivery-section" aria-labelledby="statistics-heading"><p class="eyebrow">ORDER STATISTICS</p><h2 id="statistics-heading">접수일별 통계</h2><p class="hint">서울 시각의 주문 접수일 기준입니다. 취소 주문은 건수에만 포함하고 수량·금액에서는 제외합니다.</p><form id="statistics-form" class="search-form" novalidate><div><label for="statistics-date">주문 접수일</label><input id="statistics-date" type="date" min="2000-01-01" max="2099-12-31" required></div><button id="statistics-submit" type="submit" class="button primary">통계 조회</button></form><p id="statistics-feedback" class="form-feedback" aria-live="polite"></p><div id="order-statistics"></div><div id="menu-statistics"></div><div id="customer-statistics"></div></section>
+    </section>
+  </main>
+  <footer class="wrap site-footer"><span>Grids & Circle</span><span>주문 접수·배송 대상 조회 실습 · 실제 결제 및 배송 연동 없음</span></footer>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title"><form id="settings-form" novalidate><div class="dialog-heading"><h2 id="settings-title">연결 설정</h2><button id="close-settings" type="button" class="icon-button" aria-label="연결 설정 닫기">×</button></div><label for="connection-mode">화면 실행 모드</label><select id="connection-mode"><option value="api">실제 API 연결</option><option value="demo">화면 미리보기 — 고정 예시</option></select><label for="api-base">API 서버 주소</label><input id="api-base" type="url" placeholder="http://127.0.0.1:8080"><p class="hint">서버 주소만 입력하세요. /api/v1 경로는 화면에서 붙입니다. API 연결은 정적 HTTP 서버에서 실행해야 합니다.</p><p id="settings-feedback" class="form-feedback" aria-live="polite"></p><button type="submit" class="button primary full">설정 적용</button></form></dialog>
+  <dialog id="detail-dialog" class="wide-dialog" aria-labelledby="detail-heading"><div class="dialog-heading"><h2 id="detail-heading">주문 상세</h2><button id="close-detail" type="button" class="icon-button" aria-label="주문 상세 닫기">×</button></div><div id="order-detail"></div></dialog>
+  <dialog id="delete-dialog" aria-labelledby="delete-heading"><h2 id="delete-heading">메뉴를 삭제할까요?</h2><p id="delete-description"></p><p class="hint">주문 내역에 사용된 메뉴는 서버에서 삭제를 거절합니다.</p><div class="button-row"><button id="confirm-delete" type="button" class="button danger">삭제하기</button><button id="cancel-delete" type="button" class="button subtle">취소</button></div></dialog>
+  <dialog id="category-delete-dialog" aria-labelledby="category-delete-heading"><h2 id="category-delete-heading">카테고리를 삭제할까요?</h2><p id="category-delete-description"></p><div class="button-row"><button id="confirm-category-delete" type="button" class="button danger">삭제하기</button><button id="close-category-delete" type="button" class="button subtle">취소</button></div></dialog>
+  <template id="menu-card-template"><article class="menu-card"><div class="menu-illustration"><img src="assets/coffee-bag.svg" alt="" width="140" height="140"><span class="bean-label">COFFEE BEANS</span></div><div class="menu-card-body"><h3 class="menu-card-name"></h3><p class="menu-card-description"></p><div class="menu-card-bottom"><strong class="menu-card-price"></strong><button type="button" class="button outline small add-menu">담기 <span aria-hidden="true">＋</span></button></div></div></article></template>
+</body>
+</html>

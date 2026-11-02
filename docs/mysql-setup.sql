@@ -1,0 +1,7 @@
+-- 팀 공통 DB 설정. 각자 로컬 MySQL(8.0.16 이상)에서 root로 한 번만 실행한다.
+CREATE DATABASE IF NOT EXISTS cafe DEFAULT CHARACTER SET utf8mb4;
+CREATE USER IF NOT EXISTS 'cafe'@'localhost' IDENTIFIED BY 'cafe1234';
+CREATE USER IF NOT EXISTS 'cafe'@'127.0.0.1' IDENTIFIED BY 'cafe1234';
+GRANT ALL PRIVILEGES ON cafe.* TO 'cafe'@'localhost';
+GRANT ALL PRIVILEGES ON cafe.* TO 'cafe'@'127.0.0.1';
+FLUSH PRIVILEGES;
