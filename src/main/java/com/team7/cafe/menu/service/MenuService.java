@@ -6,6 +6,7 @@ import com.team7.cafe.menu.dto.MenuRequest;
 import com.team7.cafe.menu.dto.MenuResponse;
 import com.team7.cafe.menu.entity.Menu;
 import com.team7.cafe.menu.repository.MenuRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,7 @@ public class MenuService {
     private final MenuRepository menuRepository;
     private final CategoryRepository categoryRepository;
 
-    // 명시적 생성자 주입 [2026.11.02/안형빈]
+    @Autowired
     public MenuService(MenuRepository menuRepository, CategoryRepository categoryRepository) {
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
@@ -29,11 +30,12 @@ public class MenuService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. id=" + request.getCategoryId()));
 
+        // Menu 생성자 시그니처에 맞춰 category를 첫 번째 파라미터로 수정
         Menu menu = new Menu(
+                category,
                 request.getName(),
-                request.getDescription(),
                 request.getPrice(),
-                category
+                request.getDescription()
         );
 
         Menu savedMenu = menuRepository.save(menu);
@@ -75,7 +77,7 @@ public class MenuService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. id=" + request.getCategoryId()));
 
-        menu.update(request.getName(), request.getDescription(), request.getPrice(), category);
+        menu.update(category, request.getName(), request.getPrice(), request.getDescription());
         return MenuResponse.from(menu);
     }
 
