@@ -22,6 +22,7 @@ public interface MenuRepository extends JpaRepository<Menu, Long> {
     boolean existsByCategoryId(Long categoryId);
 
     // [5] 메뉴명 검색 (A20: 대소문자 구분 및 와일드카드 특수문자 오작동 방지)
-    @Query(value = "SELECT * FROM menu WHERE LOCATE(BINARY :keyword, name) > 0 ORDER BY id", nativeQuery = true)
+    // name 컬럼이 utf8mb4_0900_ai_ci라서 keyword에만 BINARY를 걸면 대소문자가 무시됨, 양쪽 모두 BINARY로 비교 [2026.11.03/안형빈]
+    @Query(value = "SELECT * FROM menu WHERE LOCATE(BINARY :keyword, BINARY name) > 0 ORDER BY id", nativeQuery = true)
     List<Menu> search(@Param("keyword") String keyword);
 }
