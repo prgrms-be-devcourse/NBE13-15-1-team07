@@ -3,3 +3,131 @@
 @categoryId = 1
 @menuId = 1
 @orderId = 1
+
+@newMenuId = 5
+
+################################################################################
+### [메뉴 B: 안형빈] 정상 케이스 A06~A10, A15, A19~A21 [2026.11.03/안형빈]
+### 실행 순서: A06 → A07 → A08 → (응답 id를 @newMenuId에 입력) → A09 → A21 → A19 → A20 → A15 → A10
+### 준비 데이터: 카테고리 1번과 메뉴 1번이 있어야 한다. (data.sql 초기 데이터 기준)
+################################################################################
+
+### [1] A06 전체 메뉴 [2026.11.03/안형빈]
+# 기대 상태: 200
+# 비교할 응답 값: JSON 배열, id 오름차순, 각 항목에 id/categoryId/name/price/description/available 6개 필드 (판매 중지 메뉴도 포함)
+GET {{baseUrl}}/api/v1/menus
+
+### [2] A07 메뉴 상세 [2026.11.03/안형빈]
+# 준비 데이터: 메뉴 @menuId
+# 기대 상태: 200
+# 비교할 응답 값: id == @menuId, categoryId == 1, name, price, description, available == true
+GET {{baseUrl}}/api/v1/menus/{{menuId}}
+
+### [3] A08 메뉴 등록 [2026.11.03/안형빈]
+# 준비 데이터: 카테고리 @categoryId
+# 기대 상태: 201
+# 비교할 응답 값: id 새로 발급(이 값을 위 @newMenuId에 입력), name == "테스트 원두", price == 6500, description == "등록 테스트", available == true (신규는 항상 true)
+POST {{baseUrl}}/api/v1/menus
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "테스트 원두",
+  "price": 6500,
+  "description": "등록 테스트"
+}
+
+### [4] A09 메뉴 일반 수정 [2026.11.03/안형빈]
+# 준비 데이터: A08로 만든 메뉴 @newMenuId
+# 기대 상태: 200
+# 비교할 응답 값: name == "테스트 원두 수정", price == 7000, description == "수정 테스트", available == true (판매 여부는 수정으로 바뀌지 않음)
+PUT {{baseUrl}}/api/v1/menus/{{newMenuId}}
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "테스트 원두 수정",
+  "price": 7000,
+  "description": "수정 테스트"
+}
+
+### [5] A21 판매 여부 변경 [2026.11.03/안형빈]
+# 준비 데이터: A08로 만든 메뉴 @newMenuId
+# 기대 상태: 200
+# 비교할 응답 값: available == false, 나머지 필드(name 등)는 A09 결과 그대로
+PUT {{baseUrl}}/api/v1/menus/{{newMenuId}}/availability
+Content-Type: application/json
+
+{
+  "available": false
+}
+
+### [6] A19 판매 중 메뉴 [2026.11.03/안형빈]
+# 준비 데이터: A21로 @newMenuId를 판매 중지한 상태
+# 기대 상태: 200
+# 비교할 응답 값: JSON 배열, 모든 항목 available == true, @newMenuId 메뉴는 목록에 없음
+GET {{baseUrl}}/api/v1/menus/available
+
+### [7] A20 메뉴명 검색 [2026.11.03/안형빈]
+# 준비 데이터: 메뉴명에 "테스트"가 들어간 @newMenuId (판매 중지 상태)
+# 기대 상태: 200
+# 비교할 응답 값: 이름에 "테스트"가 포함된 메뉴만, 판매 중지 메뉴도 포함, 대소문자 구분 (한글은 URL 인코딩된 값으로 전송)
+GET {{baseUrl}}/api/v1/menus/search?keyword=%ED%85%8C%EC%8A%A4%ED%8A%B8
+
+### [8] A15 카테고리별 메뉴 [2026.11.03/안형빈]
+# 준비 데이터: 카테고리 @categoryId
+# 기대 상태: 200
+# 비교할 응답 값: 모든 항목 categoryId == @categoryId, id 오름차순 (판매 중지 메뉴도 포함)
+GET {{baseUrl}}/api/v1/categories/{{categoryId}}/menus
+
+### [9] A10 메뉴 삭제 [2026.11.03/안형빈]
+# 준비 데이터: A08로 만든 메뉴 @newMenuId (주문된 적 없음)
+# 기대 상태: 204
+# 비교할 응답 값: 본문이 비어 있음. 이후 GET /menus/{{newMenuId}} 하면 404
+DELETE {{baseUrl}}/api/v1/menus/{{newMenuId}}
+
+################################################################################
+### [메뉴 B: 안형빈] 오류 케이스 [2026.11.03/안형빈]
+################################################################################
+
+### [오류 1] A08 가격 범위 위반 - 입력 오류 400 [2026.11.03/안형빈]
+# 준비 데이터: 카테고리 @categoryId
+# 기대 상태: 400
+# 비교할 응답 값: code == "VALIDATION_ERROR", message == "입력값을 확인해 주세요.", fieldErrors에 "price" 키가 있음 (메뉴는 저장되지 않음)
+POST {{baseUrl}}/api/v1/menus
+Content-Type: application/json
+
+{
+  "categoryId": {{categoryId}},
+  "name": "가격 오류 메뉴",
+  "price": 0,
+  "description": "가격 범위 위반"
+}
+
+### [오류 2] A07 없는 메뉴 상세 - 대상 없음 404 [2026.11.03/안형빈]
+# 준비 데이터: 존재하지 않는 메뉴 ID 999999
+# 기대 상태: 404
+# 비교할 응답 값: code == "MENU_NOT_FOUND", message == "메뉴를 찾을 수 없습니다.", fieldErrors == {}
+GET {{baseUrl}}/api/v1/menus/999999
+
+### [오류 3-준비] 주문 접수 (A11, 김지호 API) - 메뉴 @menuId를 주문에 사용 [2026.11.03/안형빈]
+# 이 요청은 아래 [오류 3]의 준비 단계다. 주문 API가 구현되기 전에는 실행할 수 없다.
+# 요청 본문 필드명은 주문 담당(김지호)의 최종 명세에 맞게 확인할 것.
+# 기대 상태: 201 (이후 이 메뉴는 주문된 적 있는 메뉴가 된다)
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "email": "buyer@example.com",
+  "address": "서울시 강남구 테헤란로 1",
+  "postcode": "06234",
+  "items": [
+    { "menuId": {{menuId}}, "quantity": 1 }
+  ]
+}
+
+### [오류 3] A10 주문된 메뉴 삭제 - 업무 조건 위반 409 [2026.11.03/안형빈]
+# 준비 데이터: 위 [오류 3-준비]로 주문된 메뉴 @menuId (주문이 취소돼도 삭제는 막힌다)
+# 기대 상태: 409
+# 비교할 응답 값: code == "MENU_IN_USE", message == "주문에 사용된 메뉴는 삭제할 수 없습니다.", fieldErrors == {} (메뉴는 삭제되지 않음)
+DELETE {{baseUrl}}/api/v1/menus/{{menuId}}
