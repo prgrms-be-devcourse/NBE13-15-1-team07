@@ -9,6 +9,7 @@ import com.team7.cafe.order.OrderErrorCode;
 import com.team7.cafe.order.dto.OrderCreateRequest;
 import com.team7.cafe.order.dto.OrderItemRequest;
 import com.team7.cafe.order.dto.OrderResponse;
+import com.team7.cafe.order.dto.OrderSummaryResponse;
 import com.team7.cafe.order.entity.Order;
 import com.team7.cafe.order.entity.OrderItem;
 import com.team7.cafe.order.entity.OrderStatus;
@@ -53,6 +54,20 @@ public class OrderService {
 
         Order order = placeOrder(original.getEmail(), original.getAddress(), original.getPostcode(), lines);
         return OrderResponse.from(order);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(Long orderId) {
+        Order order = orderRepository.findWithItemsById(orderId)
+                .orElseThrow(() -> new ApiException(OrderErrorCode.ORDER_NOT_FOUND));
+        return OrderResponse.from(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderSummaryResponse> getOrders(String email) {
+        return orderRepository.findByEmailOrderByCreatedAtDescIdDesc(email).stream()
+                .map(OrderSummaryResponse::from)
+                .toList();
     }
 
     private Order placeOrder(String email, String address, String postcode, List<OrderItemRequest> lines) {
