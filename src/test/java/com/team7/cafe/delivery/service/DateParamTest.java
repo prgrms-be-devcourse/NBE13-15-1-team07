@@ -20,6 +20,9 @@ class DateParamTest {
     @Test
     @DisplayName("범위의 양 끝과 윤일은 통과한다")
     void validBoundaries() {
+        // given: 허용 범위의 양 끝(2000-01-01, 2099-12-31)과 윤일
+
+        // when & then
         assertThat(DateParam.parse("date", "2000-01-01")).isEqualTo(LocalDate.of(2000, 1, 1));
         assertThat(DateParam.parse("date", "2099-12-31")).isEqualTo(LocalDate.of(2099, 12, 31));
         assertThat(DateParam.parse("date", "2024-02-29")).isEqualTo(LocalDate.of(2024, 2, 29));
@@ -44,6 +47,9 @@ class DateParamTest {
     })
     @DisplayName("올바르지 않은 날짜는 VALIDATION_ERROR와 필드 오류를 돌려준다")
     void invalid(String value) {
+        // given: 올바르지 않은 날짜 문자열(value)
+
+        // when & then
         assertThatThrownBy(() -> DateParam.parse("date", value))
                 .isInstanceOfSatisfying(ApiException.class, e -> {
                     assertThat(e.errorCode()).isEqualTo(CommonErrorCode.VALIDATION_ERROR);
@@ -54,6 +60,9 @@ class DateParamTest {
     @Test
     @DisplayName("필드 오류의 키는 호출자가 넘긴 파라미터 이름이다")
     void fieldNameIsCallerSupplied() {
+        // given: 파라미터 이름 shippingDate로 호출한다
+
+        // when & then
         assertThatThrownBy(() -> DateParam.parse("shippingDate", "abc"))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.fieldErrors()).containsOnlyKeys("shippingDate"));
