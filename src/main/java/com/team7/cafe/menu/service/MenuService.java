@@ -2,6 +2,7 @@ package com.team7.cafe.menu.service;
 
 import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
+import com.team7.cafe.order.repository.OrderItemRepository;
 import com.team7.cafe.menu.dto.MenuRequest;
 import com.team7.cafe.menu.dto.MenuResponse;
 import com.team7.cafe.menu.entity.Menu;
@@ -18,11 +19,13 @@ public class MenuService {
 
     private final MenuRepository menuRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Autowired
-    public MenuService(MenuRepository menuRepository, CategoryRepository categoryRepository) {
+    public MenuService(MenuRepository menuRepository, CategoryRepository categoryRepository, OrderItemRepository orderItemRepository) {
         this.menuRepository = menuRepository;
         this.categoryRepository = categoryRepository;
+        this.orderItemRepository = orderItemRepository;
     }
 
     // [1] A08: 신규 메뉴 등록 [2026.11.02/안형빈]
@@ -81,10 +84,16 @@ public class MenuService {
         return MenuResponse.from(menu);
     }
 
-    // [6] A10: 메뉴 삭제 [2026.11.02/안형빈]
+    // [6] A10: 메뉴 삭제 [2026.11.03/안형빈]
     public void deleteMenu(Long id) {
         Menu menu = menuRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메뉴입니다. id=" + id));
+
+        // 기획서 핵심 업무 규칙: 한 번이라도 주문된 메뉴(취소 포함)는 409 MENU_IN_USE
+        if (orderItemRepository.existsByMenuId(id)) {
+            throw new IllegalStateException("주문에 사용된 메뉴는 삭제할 수 없습니다. id=" + id);
+        }
+
         menuRepository.delete(menu);
     }
 
