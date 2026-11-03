@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -120,6 +121,98 @@ class CategoryServiceTest {
 
             verify(categoryRepository).existsByName(duplicateName);
             verify(categoryRepository, never()).save(any(Category.class));
+        }
+
+        @Nested
+        @DisplayName("카테고리 수정 (A04)")
+        class UpdateCategoryTest {
+
+            @Test
+            @DisplayName("성공: 새로운 이름으로 수정 시 정상 반영되고 200 OK를 반환한다.")
+            void updateCategory_success() {
+                // given
+                Long categoryId = 1L;
+                Category category = new Category("기존이름");
+                ReflectionTestUtils.setField(category, "id", categoryId);
+
+                CategoryCreateRequest request = new CategoryCreateRequest("  새이름  ");
+
+                given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+                given(categoryRepository.existsByName("새이름")).willReturn(false);
+
+                // when
+                CategoryResponse response = categoryService.updateCategory(categoryId, request);
+
+                // then
+                assertThat(response).isNotNull();
+                assertThat(response.id()).isEqualTo(categoryId);
+                assertThat(response.name()).isEqualTo("새이름");
+
+                verify(categoryRepository).findById(categoryId);
+                verify(categoryRepository).existsByName("새이름");
+            }
+
+            @Test
+            @DisplayName("성공: 현재 이름 그대로 수정 요청 시 중복 검사 없이 정상 반환한다.")
+            void updateCategory_sameName_success() {
+                // given
+                Long categoryId = 1L;
+                Category category = new Category("커피");
+                ReflectionTestUtils.setField(category, "id", categoryId);
+
+                CategoryCreateRequest request = new CategoryCreateRequest("  커피  ");
+
+                given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+
+                // when
+                CategoryResponse response = categoryService.updateCategory(categoryId, request);
+
+                // then
+                assertThat(response).isNotNull();
+                assertThat(response.id()).isEqualTo(categoryId);
+                assertThat(response.name()).isEqualTo("커피");
+
+                verify(categoryRepository).findById(categoryId);
+                verify(categoryRepository, never()).existsByName(any());
+            }
+
+            @Test
+            @DisplayName("실패: 변경할 이름이 다른 카테고리에 이미 존재하면 409 ApiException이 발생한다.")
+            void updateCategory_duplicateName_fail() {
+                // given
+                Long categoryId = 1L;
+                Category category = new Category("커피");
+                ReflectionTestUtils.setField(category, "id", categoryId);
+
+                CategoryCreateRequest request = new CategoryCreateRequest("디저트");
+
+                given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+                given(categoryRepository.existsByName("디저트")).willReturn(true);
+
+                // when & then
+                assertThatThrownBy(() -> categoryService.updateCategory(categoryId, request))
+                        .isInstanceOf(ApiException.class);
+
+                verify(categoryRepository).findById(categoryId);
+                verify(categoryRepository).existsByName("디저트");
+            }
+
+            @Test
+            @DisplayName("실패: 존재하지 않는 카테고리 ID로 요청 시 404 ApiException이 발생한다.")
+            void updateCategory_notFound_fail() {
+                // given
+                Long nonExistentId = 999L;
+                CategoryCreateRequest request = new CategoryCreateRequest("새이름");
+
+                given(categoryRepository.findById(nonExistentId)).willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> categoryService.updateCategory(nonExistentId, request))
+                        .isInstanceOf(ApiException.class);
+
+                verify(categoryRepository).findById(nonExistentId);
+                verify(categoryRepository, never()).existsByName(any());
+            }
         }
     }
 }

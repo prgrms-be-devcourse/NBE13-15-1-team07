@@ -1,8 +1,10 @@
 package com.team7.cafe.category.controller;
 
+import com.team7.cafe.category.dto.request.CategoryCreateRequest;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.service.CategoryService;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -10,10 +12,19 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+// Jackson ObjectMapper import
+import tools.jackson.databind.ObjectMapper;
+
+// Mockito ArgumentMatchers static import (eq, any)
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+
+// MockMvc static import (put, status, jsonPath 등)
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -22,6 +33,9 @@ class CategoryControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private CategoryService categoryService;
@@ -57,5 +71,44 @@ class CategoryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(categoryId))
                 .andExpect(jsonPath("$.name").value("커피"));
+    }
+
+    @Nested
+    @DisplayName("카테고리 수정 API (PUT /categories/{id})")
+    class UpdateCategoryApiTest {
+
+        @Test
+        @DisplayName("성공: 올바른 요청 본문과 ID로 요청 시 200 OK와 수정된 카테고리 정보를 반환한다.")
+        void updateCategory_success() throws Exception {
+            // given
+            Long categoryId = 1L;
+            CategoryCreateRequest request = new CategoryCreateRequest("디저트");
+            CategoryResponse response = new CategoryResponse(categoryId, "디저트");
+
+            given(categoryService.updateCategory(eq(categoryId), any(CategoryCreateRequest.class)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(put("/categories/{id}", categoryId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(categoryId))
+                    .andExpect(jsonPath("$.name").value("디저트"));
+        }
+
+        @Test
+        @DisplayName("실패: 카테고리 이름이 공백이면 400 Bad Request를 반환한다.")
+        void updateCategory_blankName_badRequest() throws Exception {
+            // given
+            Long categoryId = 1L;
+            CategoryCreateRequest request = new CategoryCreateRequest("   ");
+
+            // when & then
+            mockMvc.perform(put("/categories/{id}", categoryId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
     }
 }
