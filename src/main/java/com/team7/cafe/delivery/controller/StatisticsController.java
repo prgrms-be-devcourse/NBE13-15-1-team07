@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.team7.cafe.delivery.dto.CustomerStatisticsResponse;
 import com.team7.cafe.delivery.dto.MenuStatisticsResponse;
 import com.team7.cafe.delivery.dto.OrderStatisticsResponse;
 import com.team7.cafe.delivery.service.StatisticsService;
@@ -35,7 +36,7 @@ public class StatisticsController {
 
     /** A24 고객 통계 */
     @GetMapping("/customers")
-    public Object customers(@RequestParam String date) {
-        throw new UnsupportedOperationException("A24 미구현");
+    public List<CustomerStatisticsResponse> customers(@RequestParam String date) {
+        return statisticsService.customerStatistics(date);
     }
 }

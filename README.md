@@ -15,6 +15,7 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 ## 배송·통계 구현 규칙 (delivery, 유승민)
 명세에 없거나 프론트(`web/js/domain.js`)의 응답 검증과 맞물려 정한 규칙.
 - **A18 메뉴 통계**: PLACED 수량이 0인 메뉴(그날 취소된 주문에만 있던 메뉴)는 목록에서 **제외**한다. 명세에는 포함 여부가 없고, 프론트는 `totalQuantity > 0`이 아니면 `RESPONSE_MISMATCH`로 처리하기 때문이다.
+- **A24 고객 통계**: 모두 취소한 고객도 포함하되 `placedOrderCount`·`totalQuantity`·`totalAmount`는 0, `orderCount`는 취소 포함 건수. 이메일 오름차순.
 - 합산 키는 (메뉴 ID, 주문 당시 메뉴명, 단가)가 모두 같을 때만 — SQL `GROUP BY` 대신 서비스에서 문자열 그대로 비교한다. 정렬은 메뉴 ID → 단가 → 메뉴명 오름차순.
 
 ## 시각 경계(13:59:59 / 14:00:00) 확인
