@@ -24,5 +24,13 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryResponse> getCategory(
+            @PathVariable Long id){
+        CategoryResponse response = categoryService.getCategory(id);
+        return ResponseEntity.ok(response);
+    }
+
+
 
 }
