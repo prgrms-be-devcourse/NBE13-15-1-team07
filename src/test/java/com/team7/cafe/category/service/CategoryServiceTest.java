@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +31,51 @@ class CategoryServiceTest {
 
     @Mock
     private CategoryRepository categoryRepository;
+    @Nested
+    @DisplayName("카테고리 전체 목록 조회 (A01)")
+    class GetCategoriesTest {
+
+        @Test
+        @DisplayName("성공: 등록된 카테고리 목록이 존재하면 ID 오름차순 DTO 리스트로 반환된다.")
+        void getCategories_success() {
+            // given
+            Category category1 = new Category("커피");
+            ReflectionTestUtils.setField(category1, "id", 1L);
+
+            Category category2 = new Category("디저트");
+            ReflectionTestUtils.setField(category2, "id", 2L);
+
+            given(categoryRepository.findAllByOrderByIdAsc()).willReturn(List.of(category1, category2));
+
+            // when
+            List<CategoryResponse> responses = categoryService.getCategories();
+
+            // then
+            assertThat(responses).hasSize(2);
+            assertThat(responses.get(0).id()).isEqualTo(1L);
+            assertThat(responses.get(0).name()).isEqualTo("커피");
+            assertThat(responses.get(1).id()).isEqualTo(2L);
+            assertThat(responses.get(1).name()).isEqualTo("디저트");
+
+            verify(categoryRepository).findAllByOrderByIdAsc();
+        }
+
+        @Test
+        @DisplayName("성공: 등록된 카테고리가 없으면 빈 리스트를 반환한다.")
+        void getCategories_empty() {
+            // given
+            given(categoryRepository.findAllByOrderByIdAsc()).willReturn(List.of());
+
+            // when
+            List<CategoryResponse> responses = categoryService.getCategories();
+
+            // then
+            assertThat(responses).isNotNull();
+            assertThat(responses).isEmpty();
+
+            verify(categoryRepository).findAllByOrderByIdAsc();
+        }
+    }
 
     @Nested
     @DisplayName("카테고리 등록 (A03)")

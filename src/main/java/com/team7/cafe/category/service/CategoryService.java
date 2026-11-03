@@ -14,11 +14,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
+    @Transactional
     public CategoryResponse createCategory(CategoryCreateRequest request){
         if (categoryRepository.existsByName(request.name())) {
             throw new ApiException(CategoryErrorCode.CATEGORY_NAME_DUPLICATED);
@@ -36,12 +37,9 @@ public class CategoryService {
     }
 
     public List<CategoryResponse> getCategories() {
-        List<Category> list = categoryRepository.findAll();
+        List<Category> list = categoryRepository.findAllByOrderByIdAsc();
         return list.stream()
                 .map(category -> CategoryResponse.from(category))
                 .toList();
     }
-
-
-
 }
