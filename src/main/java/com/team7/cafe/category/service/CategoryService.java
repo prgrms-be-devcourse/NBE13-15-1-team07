@@ -6,6 +6,7 @@ import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
 import com.team7.cafe.global.error.ApiException;
+import com.team7.cafe.menu.repository.MenuRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final MenuRepository menuRepository;
 
     @Transactional
     public CategoryResponse createCategory(CategoryCreateRequest request){
@@ -58,4 +60,16 @@ public class CategoryService {
 
         return CategoryResponse.from(category);
     }
+
+    @Transactional
+    public void deleteCategory(Long id){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
+        if (menuRepository.existsByCategoryId(id)) {
+            throw new ApiException(CategoryErrorCode.CATEGORY_IN_USE);
+        }
+
+        categoryRepository.delete(category);
+    }
+
 }
