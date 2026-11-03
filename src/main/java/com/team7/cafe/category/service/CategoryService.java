@@ -27,5 +27,13 @@ public class CategoryService {
         return CategoryResponse.from(savedCategory);
     }
 
+    public CategoryResponse getCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
+        return CategoryResponse.from(category);
+    }
+
+
+
 
 }
