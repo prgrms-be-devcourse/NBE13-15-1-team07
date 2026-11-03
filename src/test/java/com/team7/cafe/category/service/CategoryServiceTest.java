@@ -5,6 +5,7 @@ import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
 import com.team7.cafe.global.error.ApiException;
+import com.team7.cafe.menu.repository.MenuRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,10 @@ class CategoryServiceTest {
 
     @Mock
     private CategoryRepository categoryRepository;
+
+    @Mock
+    private MenuRepository menuRepository;
+
     @Nested
     @DisplayName("카테고리 전체 목록 조회 (A01)")
     class GetCategoriesTest {
@@ -213,6 +218,63 @@ class CategoryServiceTest {
                 verify(categoryRepository).findById(nonExistentId);
                 verify(categoryRepository, never()).existsByName(any());
             }
+
+            @Test
+            @DisplayName("성공: 소속 메뉴가 없는 카테고리는 정상 삭제된다.")
+            void deleteCategory_success() {
+                // given
+                Long categoryId = 1L;
+                Category category = new Category("커피");
+                ReflectionTestUtils.setField(category, "id", categoryId);
+
+                given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+                given(menuRepository.existsByCategoryId(categoryId)).willReturn(false);
+
+                // when
+                categoryService.deleteCategory(categoryId);
+
+                // then
+                verify(categoryRepository).findById(categoryId);
+                verify(menuRepository).existsByCategoryId(categoryId);
+                verify(categoryRepository).delete(category);
+            }
+
+            @Test
+            @DisplayName("실패: 소속 메뉴가 존재하는 카테고리 삭제 시 409 CATEGORY_IN_USE 예외가 발생한다.")
+            void deleteCategory_inUse_fail() {
+                // given
+                Long categoryId = 1L;
+                Category category = new Category("커피");
+                ReflectionTestUtils.setField(category, "id", categoryId);
+
+                given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+                given(menuRepository.existsByCategoryId(categoryId)).willReturn(true);
+
+                // when & then
+                assertThatThrownBy(() -> categoryService.deleteCategory(categoryId))
+                        .isInstanceOf(ApiException.class);
+
+                verify(categoryRepository).findById(categoryId);
+                verify(menuRepository).existsByCategoryId(categoryId);
+                verify(categoryRepository, never()).delete(any());
+            }
+
+            @Test
+            @DisplayName("실패: 존재하지 않는 카테고리 ID 삭제 요청 시 404 CATEGORY_NOT_FOUND 예외가 발생한다.")
+            void deleteCategory_notFound_fail() {
+                // given
+                Long nonExistentId = 999L;
+                given(categoryRepository.findById(nonExistentId)).willReturn(Optional.empty());
+
+                // when & then
+                assertThatThrownBy(() -> categoryService.deleteCategory(nonExistentId))
+                        .isInstanceOf(ApiException.class);
+
+                verify(categoryRepository).findById(nonExistentId);
+                verify(menuRepository, never()).existsByCategoryId(any());
+                verify(categoryRepository, never()).delete(any());
+            }
+
         }
     }
 }

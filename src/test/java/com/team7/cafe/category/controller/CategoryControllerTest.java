@@ -23,10 +23,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 // MockMvc static import (put, status, jsonPath 등)
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+//willDoNothing()
+import static org.mockito.BDDMockito.willDoNothing;
 
 @WebMvcTest(CategoryController.class)
 class CategoryControllerTest {
@@ -110,5 +115,20 @@ class CategoryControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
         }
+
+        @Test
+        @DisplayName("성공: 존재하는 카테고리 삭제 요청 시 204 No Content를 반환한다.")
+        void deleteCategory_success() throws Exception {
+            // given
+            Long categoryId = 1L;
+            willDoNothing().given(categoryService).deleteCategory(categoryId);
+
+            // when & then
+            mockMvc.perform(delete("/categories/{id}", categoryId))
+                    .andExpect(status().isNoContent());
+
+            verify(categoryService).deleteCategory(categoryId);
+        }
+
     }
 }
