@@ -42,4 +42,20 @@ public class CategoryService {
                 .map(category -> CategoryResponse.from(category))
                 .toList();
     }
+
+    @Transactional
+    public CategoryResponse updateCategory(Long id, CategoryCreateRequest request){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
+
+        String newName = request.name().strip();
+        if (!category.getName().equals(newName)) {
+            if (categoryRepository.existsByName(newName)) {
+                throw new ApiException(CategoryErrorCode.CATEGORY_NAME_DUPLICATED);
+            }
+            category.updateName(newName);
+        }
+
+        return CategoryResponse.from(category);
+    }
 }
