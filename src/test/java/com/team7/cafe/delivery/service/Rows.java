@@ -20,4 +20,9 @@ final class Rows {
     static OrderItemRow cancelled(long orderId, String email, long menuId, String menuName, int unitPrice, int quantity) {
         return row(orderId, email, "CANCELLED", menuId, menuName, unitPrice, quantity);
     }
+
+    static OrderItemRow withAddress(OrderItemRow base, String address, String postcode) {
+        return new OrderItemRow(base.orderId(), base.email(), address, postcode, base.status(),
+                base.menuId(), base.menuName(), base.unitPrice(), base.quantity(), base.lineAmount());
+    }
 }
