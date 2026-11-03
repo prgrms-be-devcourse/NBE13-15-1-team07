@@ -1,5 +1,10 @@
 package com.team7.cafe.category;
 
+import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.response.CategoryResponse;
+import com.team7.cafe.category.entity.Category;
+import com.team7.cafe.category.repository.CategoryRepository;
+import com.team7.cafe.category.service.CategoryService;
 import com.team7.cafe.global.error.ApiException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

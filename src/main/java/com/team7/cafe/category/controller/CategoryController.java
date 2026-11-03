@@ -1,5 +1,8 @@
-package com.team7.cafe.category;
+package com.team7.cafe.category.controller;
 
+import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.response.CategoryResponse;
+import com.team7.cafe.category.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

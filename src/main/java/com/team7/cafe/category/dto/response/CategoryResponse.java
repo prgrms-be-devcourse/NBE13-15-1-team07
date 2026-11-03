@@ -1,4 +1,6 @@
-package com.team7.cafe.category;
+package com.team7.cafe.category.dto.response;
+
+import com.team7.cafe.category.entity.Category;
 
 public record CategoryResponse(
         Long id,
