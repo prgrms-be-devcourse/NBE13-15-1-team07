@@ -1,13 +1,16 @@
 package com.team7.cafe.delivery.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.team7.cafe.delivery.dto.MenuStatisticsResponse;
 import com.team7.cafe.delivery.dto.OrderStatisticsResponse;
 import com.team7.cafe.delivery.repository.DeliveryQueryRepository;
 import com.team7.cafe.delivery.repository.DeliveryQueryRepository.OrderItemRow;
@@ -45,5 +48,28 @@ public class StatisticsService {
         long placed = statusByOrder.values().stream().filter(PLACED::equals).count();
         long cancelled = statusByOrder.size() - placed;
         return new OrderStatisticsResponse(parsed, placed + cancelled, placed, cancelled, quantity, amount);
+    }
+
+    /**
+     * A18. PLACED만, 메뉴 ID·당시 이름·단가가 같은 항목끼리 합산한다.
+     * 취소된 주문에만 있던 메뉴는 PLACED 항목이 없으므로 목록에 나오지 않는다(프론트가 totalQuantity > 0을 요구).
+     */
+    public List<MenuStatisticsResponse> menuStatistics(String date) {
+        LocalDate parsed = DateParam.parse("date", date);
+
+        Map<ItemKey, long[]> sums = new TreeMap<>(ItemKey.ORDER);
+        for (OrderItemRow row : repository.findByReceivedDate(parsed)) {
+            if (!PLACED.equals(row.status())) {
+                continue;
+            }
+            long[] sum = sums.computeIfAbsent(new ItemKey(row.menuId(), row.menuName(), row.unitPrice()), k -> new long[2]);
+            sum[0] += row.quantity();
+            sum[1] += row.lineAmount();
+        }
+
+        List<MenuStatisticsResponse> result = new ArrayList<>();
+        sums.forEach((key, sum) -> result.add(
+                new MenuStatisticsResponse(key.menuId(), key.menuName(), key.unitPrice(), sum[0], sum[1])));
+        return result;
     }
 }
