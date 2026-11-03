@@ -22,17 +22,17 @@ public class MenuDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 이미 카테고리나 메뉴 데이터가 존재하면 중복 삽입 방지 [2026.11.02/안형빈]
+        // 이미 카테고리나 메뉴 데이터가 존재하면 중복 삽입 방지 [2026.11.03/안형빈]
         if (categoryRepository.count() > 0 || menuRepository.count() > 0) {
             return;
         }
 
-        // 1. 기본 카테고리 생성 (원두 패키지, 드립백, 콜드브루)
+        // 1. 기본 카테고리 생성 (원두 패키지, 드립백, 콜드브루)[2026.11.03/안형빈]
         Category coffeeBeans = categoryRepository.save(new Category("Coffee Beans"));
         Category dripBag = categoryRepository.save(new Category("Drip Bag"));
         Category coldBrew = categoryRepository.save(new Category("Cold Brew"));
 
-        // 2. 초기 메뉴 데이터 생성 (Category, Name, Price, Description)
+        // 2. 초기 메뉴 데이터 생성 (Category, Name, Price, Description)[2026.11.03/안형빈]
         // [원두 패키지]
         menuRepository.save(new Menu(
                 coffeeBeans,
