@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -16,6 +17,19 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class DeliveryQueryRepository {
 
+    /** 두 조회가 같은 컬럼을 읽으므로 SELECT 목록과 변환을 한 곳에 둔다. */
+    private static final String SELECT_ROWS = """
+            SELECT o.id, o.email, o.address, o.postcode, o.status,
+                   i.menu_id, i.menu_name, i.unit_price, i.quantity, i.line_amount
+              FROM orders o
+              JOIN order_item i ON i.order_id = o.id
+            """;
+
+    private static final RowMapper<OrderItemRow> ROW_MAPPER = (rs, n) -> new OrderItemRow(
+            rs.getLong("id"), rs.getString("email"), rs.getString("address"), rs.getString("postcode"),
+            rs.getString("status"), rs.getLong("menu_id"), rs.getString("menu_name"),
+            rs.getInt("unit_price"), rs.getInt("quantity"), rs.getLong("line_amount"));
+
     private final JdbcTemplate jdbc;
 
     public DeliveryQueryRepository(JdbcTemplate jdbc) {
@@ -26,6 +40,8 @@ public class DeliveryQueryRepository {
     public record OrderItemRow(
             long orderId,
             String email,
+            String address,
+            String postcode,
             String status,
             long menuId,
             String menuName,
@@ -36,16 +52,19 @@ public class DeliveryQueryRepository {
 
     /** 접수일(created_at의 서울 날짜)이 같은 모든 주문(취소 포함)의 항목. 하루 범위는 [당일 00:00, 다음 날 00:00). */
     public List<OrderItemRow> findByReceivedDate(LocalDate date) {
-        return jdbc.query("""
-                SELECT o.id, o.email, o.status, i.menu_id, i.menu_name, i.unit_price, i.quantity, i.line_amount
-                  FROM orders o
-                  JOIN order_item i ON i.order_id = o.id
+        return jdbc.query(SELECT_ROWS + """
                  WHERE o.created_at >= ? AND o.created_at < ?
                  ORDER BY o.id, i.id
                 """,
-                (rs, n) -> new OrderItemRow(rs.getLong("id"), rs.getString("email"), rs.getString("status"),
-                        rs.getLong("menu_id"), rs.getString("menu_name"), rs.getInt("unit_price"),
-                        rs.getInt("quantity"), rs.getLong("line_amount")),
-                date.atStartOfDay(), date.plusDays(1).atStartOfDay());
+                ROW_MAPPER, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
+    }
+
+    /** 배송일이 같은 PLACED 주문의 항목. 취소된 주문은 배송 대상이 아니므로 제외한다. */
+    public List<OrderItemRow> findPlacedByShippingDate(LocalDate shippingDate) {
+        return jdbc.query(SELECT_ROWS + """
+                 WHERE o.shipping_date = ? AND o.status = 'PLACED'
+                 ORDER BY o.id, i.id
+                """,
+                ROW_MAPPER, shippingDate);
     }
 }
