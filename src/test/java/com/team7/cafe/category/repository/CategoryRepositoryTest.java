@@ -1,5 +1,6 @@
-package com.team7.cafe.category;
+package com.team7.cafe.category.repository;
 
+import com.team7.cafe.category.entity.Category;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
