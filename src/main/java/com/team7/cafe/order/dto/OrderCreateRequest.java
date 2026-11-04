@@ -11,8 +11,7 @@ import java.util.List;
 public record OrderCreateRequest(
         @NotNull(message = "이메일은 필수입니다.")
         @Size(max = 100, message = "이메일은 100자 이하여야 합니다.")
-        @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$",
-                message = "이메일 형식을 확인해 주세요.")
+        @Pattern(regexp = OrderCreateRequest.EMAIL_REGEX, message = "이메일 형식을 확인해 주세요.")
         String email,
 
         @NotBlank(message = "주소는 필수입니다.")
@@ -27,6 +26,8 @@ public record OrderCreateRequest(
         @Size(min = 1, max = 10, message = "주문 항목은 1~10개여야 합니다.")
         List<@Valid OrderItemRequest> items
         ) {
+
+        public static final String EMAIL_REGEX = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+$";
 
         public OrderCreateRequest{
                 address = (address == null) ? null : address.trim();
