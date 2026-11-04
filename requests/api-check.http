@@ -131,3 +131,38 @@ Content-Type: application/json
 # 기대 상태: 409
 # 비교할 응답 값: code == "MENU_IN_USE", message == "주문에 사용된 메뉴는 삭제할 수 없습니다.", fieldErrors == {} (메뉴는 삭제되지 않음)
 DELETE {{baseUrl}}/api/v1/menus/{{menuId}}
+
+
+################################################################################
+### [배송·통계 D: 유승민] 정상 케이스 A14, A17, A18, A24 [2026.11.04/유승민]
+### 준비 데이터: 접수일 @statDate에 접수한 주문이 있어야 한다. 취소 주문이 하나 섞여 있으면 좋다. (A11 접수 → A16 취소)
+###   - 접수 시각이 14:00 전이면 배송일 = 당일, 14:00 이후면 다음 날이다. @shipDate를 그에 맞춰 바꿀 것.
+###   - 통계(A17·A18·A24)는 접수일(created_at의 서울 날짜) 기준, A14만 배송일 기준이다.
+################################################################################
+@statDate = 2026-11-03
+@shipDate = 2026-11-04
+
+### [D-1] A17 접수일별 주문 통계 [2026.11.04/유승민]
+# 기대 상태: 200
+# 비교할 응답 값: 객체. date == @statDate, orderCount == placedOrderCount + cancelledOrderCount (취소 포함),
+#                 totalQuantity·totalAmount는 PLACED 주문만 합산 (취소 주문은 제외)
+GET {{baseUrl}}/api/v1/statistics/orders?date={{statDate}}
+
+### [D-2] A18 접수일별 메뉴 통계 [2026.11.04/유승민]
+# 기대 상태: 200
+# 비교할 응답 값: JSON 배열, menuId → unitPrice → menuName 오름차순, 각 항목에 menuId/menuName/unitPrice/totalQuantity/totalAmount
+#                 PLACED 수량만 합산, 취소 주문에만 있던 메뉴는 목록에 없음 (totalQuantity > 0인 항목만)
+GET {{baseUrl}}/api/v1/statistics/menus?date={{statDate}}
+
+### [D-3] A24 접수일별 고객 통계 [2026.11.04/유승민]
+# 기대 상태: 200
+# 비교할 응답 값: JSON 배열, email 오름차순(대소문자 구분: 대문자가 먼저), 각 항목에 date/email/orderCount/placedOrderCount/cancelledOrderCount/totalQuantity/totalAmount
+#                 모두 취소한 고객도 포함 (placedOrderCount, totalQuantity, totalAmount == 0), orderCount는 취소 포함
+GET {{baseUrl}}/api/v1/statistics/customers?date={{statDate}}
+
+### [D-4] A14 배송 묶음 [2026.11.04/유승민]
+# 준비 데이터: 배송일이 @shipDate인 PLACED 주문. 같은 이메일로 2건 이상이면 한 묶음으로 합쳐진다.
+# 기대 상태: 200
+# 비교할 응답 값: JSON 배열, email 오름차순. 각 묶음에 shippingDate/email/address/postcode/orderIds/orderCount/items/totalAmount/totalQuantity
+#                 orderIds 오름차순·중복 없음, items는 메뉴 ID → 단가 → 메뉴명 순이며 같은 항목은 수량 합산, 취소된 주문은 포함되지 않음
+GET {{baseUrl}}/api/v1/delivery-batches?shippingDate={{shipDate}}
