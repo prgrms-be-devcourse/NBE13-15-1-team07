@@ -32,8 +32,8 @@ public class CategoryService {
         return CategoryResponse.from(savedCategory);
     }
 
-    public CategoryResponse getCategory(Long id) {
-        Category category = categoryRepository.findById(id)
+    public CategoryResponse getCategory(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
         return CategoryResponse.from(category);
     }
@@ -46,8 +46,8 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryResponse updateCategory(Long id, CategoryCreateRequest request){
-        Category category = categoryRepository.findById(id)
+    public CategoryResponse updateCategory(Long categoryId, CategoryCreateRequest request){
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
 
         String newName = request.name().strip();
@@ -62,10 +62,10 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteCategory(Long id){
-        Category category = categoryRepository.findById(id)
+    public void deleteCategory(Long categoryId){
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
-        if (menuRepository.existsByCategoryId(id)) {
+        if (menuRepository.existsByCategoryId(categoryId)) {
             throw new ApiException(CategoryErrorCode.CATEGORY_IN_USE);
         }
 
