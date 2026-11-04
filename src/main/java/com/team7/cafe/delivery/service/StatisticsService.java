@@ -14,7 +14,7 @@ import com.team7.cafe.delivery.dto.CustomerStatisticsResponse;
 import com.team7.cafe.delivery.dto.MenuStatisticsResponse;
 import com.team7.cafe.delivery.dto.OrderStatisticsResponse;
 import com.team7.cafe.delivery.repository.DeliveryQueryRepository;
-import com.team7.cafe.delivery.repository.DeliveryQueryRepository.OrderItemRow;
+import com.team7.cafe.delivery.repository.OrderItemRow;
 
 /** 통계 날짜는 배송일이 아니라 서울 기준 접수일(created_at의 날짜)이다. 나중에 취소해도 원래 접수일에 반영된다. */
 @Service

@@ -1,70 +1,51 @@
 package com.team7.cafe.delivery.repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.Repository;
+import org.springframework.data.repository.query.Param;
+
+import com.team7.cafe.order.entity.OrderItem;
 
 /**
- * 배송·통계용 조회 전용. 다른 도메인의 엔티티에 의존하지 않도록 orders / order_item 을 직접 읽는다.
- * API를 하나씩 붙이면서 조회 메서드와 행 필드를 늘린다.
- *
- * TODO: 임시 구현. 주문 엔티티(Order/OrderItem)가 dev에 들어오면 JPA 리포지토리(JPQL)로 교체한다.
- *       서비스는 OrderItemRow만 알고 있으므로 이 파일만 바꾸면 된다.
+ * 배송·통계용 조회 전용. 주문 엔티티(Order/OrderItem)에서 필요한 값만 OrderItemRow로 바로 읽는다.
+ * 서비스는 OrderItemRow만 알고 있고, 이 인터페이스는 엔티티를 밖으로 내보내지 않는다.
  */
-@Repository
-public class DeliveryQueryRepository {
+public interface DeliveryQueryRepository extends Repository<OrderItem, Long> {
 
-    /** 두 조회가 같은 컬럼을 읽으므로 SELECT 목록과 변환을 한 곳에 둔다. */
-    private static final String SELECT_ROWS = """
-            SELECT o.id, o.email, o.address, o.postcode, o.status,
-                   i.menu_id, i.menu_name, i.unit_price, i.quantity, i.line_amount
-              FROM orders o
-              JOIN order_item i ON i.order_id = o.id
-            """;
-
-    private static final RowMapper<OrderItemRow> ROW_MAPPER = (rs, n) -> new OrderItemRow(
-            rs.getLong("id"), rs.getString("email"), rs.getString("address"), rs.getString("postcode"),
-            rs.getString("status"), rs.getLong("menu_id"), rs.getString("menu_name"),
-            rs.getInt("unit_price"), rs.getInt("quantity"), rs.getLong("line_amount"));
-
-    private final JdbcTemplate jdbc;
-
-    public DeliveryQueryRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
-
-    /** 주문 한 줄 + 그 주문의 항목 한 줄. */
-    public record OrderItemRow(
-            long orderId,
-            String email,
-            String address,
-            String postcode,
-            String status,
-            long menuId,
-            String menuName,
-            int unitPrice,
-            int quantity,
-            long lineAmount) {
-    }
-
-    /** 접수일(created_at의 서울 날짜)이 같은 모든 주문(취소 포함)의 항목. 하루 범위는 [당일 00:00, 다음 날 00:00). */
-    public List<OrderItemRow> findByReceivedDate(LocalDate date) {
-        return jdbc.query(SELECT_ROWS + """
-                 WHERE o.created_at >= ? AND o.created_at < ?
-                 ORDER BY o.id, i.id
-                """,
-                ROW_MAPPER, date.atStartOfDay(), date.plusDays(1).atStartOfDay());
-    }
+    /**
+     * 접수 시각이 [from, to)인 모든 주문(취소 포함)의 항목.
+     * 엔티티의 status는 enum이라 str()로 문자열로 바꿔 OrderItemRow(String)에 맞춘다.
+     * 쿼리를 상수로 나누지 않고 통째로 쓴다. 나누면 IDE가 별칭(o, i)을 찾지 못해 경고를 낸다.
+     */
+    @Query("""
+            SELECT new com.team7.cafe.delivery.repository.OrderItemRow(
+                   o.id, o.email, o.address, o.postcode, str(o.status),
+                   i.menuId, i.menuName, i.unitPrice, i.quantity, i.lineAmount)
+              FROM OrderItem i
+              JOIN i.order o
+             WHERE o.createdAt >= :from AND o.createdAt < :to
+             ORDER BY o.id, i.id
+            """)
+    List<OrderItemRow> findByCreatedAtRange(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /** 배송일이 같은 PLACED 주문의 항목. 취소된 주문은 배송 대상이 아니므로 제외한다. */
-    public List<OrderItemRow> findPlacedByShippingDate(LocalDate shippingDate) {
-        return jdbc.query(SELECT_ROWS + """
-                 WHERE o.shipping_date = ? AND o.status = 'PLACED'
-                 ORDER BY o.id, i.id
-                """,
-                ROW_MAPPER, shippingDate);
+    @Query("""
+            SELECT new com.team7.cafe.delivery.repository.OrderItemRow(
+                   o.id, o.email, o.address, o.postcode, str(o.status),
+                   i.menuId, i.menuName, i.unitPrice, i.quantity, i.lineAmount)
+              FROM OrderItem i
+              JOIN i.order o
+             WHERE o.shippingDate = :shippingDate AND o.status = com.team7.cafe.order.entity.OrderStatus.PLACED
+             ORDER BY o.id, i.id
+            """)
+    List<OrderItemRow> findPlacedByShippingDate(@Param("shippingDate") LocalDate shippingDate);
+
+    /** 접수일(created_at의 서울 날짜)이 같은 모든 주문(취소 포함)의 항목. 하루 범위는 [당일 00:00, 다음 날 00:00). */
+    default List<OrderItemRow> findByReceivedDate(LocalDate date) {
+        return findByCreatedAtRange(date.atStartOfDay(), date.plusDays(1).atStartOfDay());
     }
 }

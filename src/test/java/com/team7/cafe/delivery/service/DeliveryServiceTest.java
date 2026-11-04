@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.team7.cafe.delivery.dto.DeliveryBatchResponse;
 import com.team7.cafe.delivery.dto.DeliveryItemResponse;
 import com.team7.cafe.delivery.repository.DeliveryQueryRepository;
-import com.team7.cafe.delivery.repository.DeliveryQueryRepository.OrderItemRow;
+import com.team7.cafe.delivery.repository.OrderItemRow;
 import com.team7.cafe.global.error.ApiException;
 import com.team7.cafe.global.error.CommonErrorCode;
 

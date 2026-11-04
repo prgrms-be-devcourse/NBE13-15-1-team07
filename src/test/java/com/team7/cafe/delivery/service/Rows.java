@@ -1,6 +1,6 @@
 package com.team7.cafe.delivery.service;
 
-import com.team7.cafe.delivery.repository.DeliveryQueryRepository.OrderItemRow;
+import com.team7.cafe.delivery.repository.OrderItemRow;
 
 /** 서비스 테스트에서 리포지토리가 돌려주는 행을 짧게 만들기 위한 도우미. */
 final class Rows {
