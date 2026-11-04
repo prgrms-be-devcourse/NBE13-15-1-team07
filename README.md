@@ -14,6 +14,33 @@ Java 21 · Spring Boot 4.1 · Gradle · MySQL · JPA. 팀 7: 유승민, 김지�
 `global`(공통 오류·CORS·Clock) · `category` · `menu` · `order` · `delivery`(담당자가 각자 브랜치에서 추가) — 도메인별 패키지, 담당은 기획서 8장 참고.
 DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/api-check.http`
 
+## 개발 환경
+| 항목 | 버전 |
+|---|---|
+| Java | 21 (Gradle toolchain) |
+| Spring Boot | 4.1.2 |
+| 빌드 | Gradle (`./gradlew`) |
+| MySQL | 8.0.16 이상 (테스트는 8.4에서 실행) |
+| 주요 의존성 | webmvc, validation, data-jpa, mysql-connector-j |
+
+## 팀원별 담당
+| 팀원 | 담당 | 브랜치 |
+|---|---|---|
+| 김아리 | 카테고리 API | `feature/category-main` |
+| 안형빈 | 메뉴 API | `feature/menu-main` |
+| 김지호 | 주문 API (A11·A12·A13·A16·A22·A23) | `feature/order-main` |
+| 유승민 | 배송·통계 API (A14·A17·A18·A24), DB 설계, 공통 오류·CORS, README | `feature/delivery-main` |
+
+작업은 각자 `feature/<담당>/<번호>/<작업>` 브랜치에서 하고, 담당별 `*-main`에 합친 뒤 `dev`에 반영한다.
+
+## 평가 대상
+- 브랜치: ⟨ main / dev ⟩
+- 커밋: ⟨ 제출 시점의 커밋 해시 ⟩
+
+## 검증 방법
+- 자동 테스트: `./gradlew test` (리포지토리 테스트는 MySQL 필요)
+- 수동 요청: `requests/api-check.http` (정상 24 · 오류 6)
+
 ## 담당 작업·검증 (유승민)
 - **담당 작업**: 배송·통계 API **A14**(배송 묶음)·**A17**(주문 통계)·**A18**(메뉴 통계)·**A24**(고객 통계)의 Controller·Service·Repository와 테스트. 그 밖에 DB 설계(`schema.sql`, [docs/db-design.md](docs/db-design.md)), 공통 오류 응답·CORS(`global`), 프로젝트 설정, README.
 - **상태**: 위 API의 구현과 테스트는 완료했다. 담당 범위의 미해결 오류는 없다(`./gradlew test` 통과, 실제 MySQL에서 API를 직접 호출해 확인).
