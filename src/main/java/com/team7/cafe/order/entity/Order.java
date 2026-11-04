@@ -68,6 +68,15 @@ public class Order {
         this.totalAmount += item.getLineAmount();
     }
 
+    public void cancel(LocalDateTime cancelledAt) {
+        this.status = OrderStatus.CANCELLED;
+        this.cancelledAt = cancelledAt;
+    }
+
+    public void changeMemo(String memo) {
+        this.memo = memo;
+    }
+
     public Long getId() {
         return id;
     }

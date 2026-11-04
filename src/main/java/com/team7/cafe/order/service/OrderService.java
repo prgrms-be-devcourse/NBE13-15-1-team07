@@ -6,10 +6,7 @@ import com.team7.cafe.menu.MenuErrorCode;
 import com.team7.cafe.menu.entity.Menu;
 import com.team7.cafe.menu.service.MenuService;
 import com.team7.cafe.order.OrderErrorCode;
-import com.team7.cafe.order.dto.OrderCreateRequest;
-import com.team7.cafe.order.dto.OrderItemRequest;
-import com.team7.cafe.order.dto.OrderResponse;
-import com.team7.cafe.order.dto.OrderSummaryResponse;
+import com.team7.cafe.order.dto.*;
 import com.team7.cafe.order.entity.Order;
 import com.team7.cafe.order.entity.OrderItem;
 import com.team7.cafe.order.entity.OrderStatus;
@@ -68,6 +65,33 @@ public class OrderService {
         return orderRepository.findByEmailOrderByCreatedAtDescIdDesc(email).stream()
                 .map(OrderSummaryResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public OrderResponse cancel(Long orderId) {
+        Order order = orderRepository.findWithItemsById(orderId)
+                .orElseThrow(() -> new ApiException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return OrderResponse.from(order);
+        }
+
+        LocalDateTime now = shippingPolicy.now();
+        if (!shippingPolicy.isCancellable(order.getShippingDate(), now)) {
+            throw new ApiException(OrderErrorCode.ORDER_NOT_CANCELLABLE);
+        }
+
+        order.cancel(now);
+        return OrderResponse.from(order);
+    }
+
+    @Transactional
+    public OrderResponse updateMemo(Long orderId, OrderMemoRequest request) {
+        Order order = orderRepository.findWithItemsById(orderId)
+                .orElseThrow(() -> new ApiException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        order.changeMemo(request.memo());
+        return OrderResponse.from(order);
     }
 
     private Order placeOrder(String email, String address, String postcode, List<OrderItemRequest> lines) {
