@@ -54,7 +54,7 @@ class CategoryControllerTest {
         given(categoryService.getCategories()).willReturn(List.of(response1, response2));
 
         // when & then
-        mockMvc.perform(get("/categories")
+        mockMvc.perform(get("/api/v1/categories")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(2))
@@ -71,7 +71,7 @@ class CategoryControllerTest {
         given(categoryService.getCategory(categoryId)).willReturn(response);
 
         // when & then
-        mockMvc.perform(get("/categories/{id}", categoryId)
+        mockMvc.perform(get("/api/v1/categories/{categoryId}", categoryId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(categoryId))
@@ -79,7 +79,7 @@ class CategoryControllerTest {
     }
 
     @Nested
-    @DisplayName("카테고리 수정 API (PUT /categories/{id})")
+    @DisplayName("카테고리 수정 API (PUT /categories/{categoryId})")
     class UpdateCategoryApiTest {
 
         @Test
@@ -94,7 +94,7 @@ class CategoryControllerTest {
                     .willReturn(response);
 
             // when & then
-            mockMvc.perform(put("/categories/{id}", categoryId)
+            mockMvc.perform(put("/api/v1/categories/{categoryId}", categoryId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -110,7 +110,7 @@ class CategoryControllerTest {
             CategoryCreateRequest request = new CategoryCreateRequest("   ");
 
             // when & then
-            mockMvc.perform(put("/categories/{id}", categoryId)
+            mockMvc.perform(put("/api/v1/categories/{categoryId}", categoryId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
@@ -124,7 +124,7 @@ class CategoryControllerTest {
             willDoNothing().given(categoryService).deleteCategory(categoryId);
 
             // when & then
-            mockMvc.perform(delete("/categories/{id}", categoryId))
+            mockMvc.perform(delete("/api/v1/categories/{categoryId}", categoryId))
                     .andExpect(status().isNoContent());
 
             verify(categoryService).deleteCategory(categoryId);

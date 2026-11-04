@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/categories")
+@RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
@@ -27,10 +27,10 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> getCategory(
-            @PathVariable Long id){
-        CategoryResponse response = categoryService.getCategory(id);
+            @PathVariable Long categoryId){
+        CategoryResponse response = categoryService.getCategory(categoryId);
         return ResponseEntity.ok(response);
     }
 
@@ -40,17 +40,17 @@ public class CategoryController {
         return ResponseEntity.ok(list);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> updateCategory(
-            @PathVariable Long id,
+            @PathVariable Long categoryId,
             @Valid @RequestBody CategoryCreateRequest request){
-        CategoryResponse response = categoryService.updateCategory(id, request);
+        CategoryResponse response = categoryService.updateCategory(categoryId, request);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-        categoryService.deleteCategory(id);
+    @DeleteMapping("/{categoryId}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long categoryId) {
+        categoryService.deleteCategory(categoryId);
         return ResponseEntity.noContent().build();
     }
 
