@@ -41,12 +41,25 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 - 자동 테스트: `./gradlew test` (리포지토리 테스트는 MySQL 필요)
 - 수동 요청: `requests/api-check.http` (정상 24 · 오류 6)
 
+## 담당 작업·검증 (김아리 — 카테고리)
+- **담당 작업**: 카테고리 API **A01~A05**의 Controller·Service·Repository.
+- **테스트**: 19개(서비스 11 · 컨트롤러 5 · 리포지토리 3).
+- **상태**: 완료
+
+## 담당 작업·검증 (안형빈 — 메뉴)
+- **담당 작업**: 메뉴 API **A06~A10, A15, A19~A21**의 Controller·Service·Repository.
+- **테스트**: 컨트롤러 테스트 2개(`MenuControllerTest`). 서비스·리포지토리 테스트는 ⟨ 없음 / 추가 예정 ⟩.
+- **상태**: 완료
+
+## 담당 작업·검증 (김지호 — 주문)
+- **담당 작업**: 주문 API **A11·A12·A13·A16·A22·A23**.
+- **테스트**: `ShippingPolicyTest` 7개(14시 경계). 주문 서비스·컨트롤러 테스트는 ⟨ 추가 예정 ⟩.
+- **상태**: 완료
+
 ## 담당 작업·검증 (유승민)
-- **담당 작업**: 배송·통계 API **A14**(배송 묶음)·**A17**(주문 통계)·**A18**(메뉴 통계)·**A24**(고객 통계)의 Controller·Service·Repository와 테스트. 그 밖에 DB 설계(`schema.sql`, [docs/db-design.md](docs/db-design.md)), 공통 오류 응답·CORS(`global`), 프로젝트 설정, README.
-- **상태**: 위 API의 구현과 테스트는 완료했다. 담당 범위의 미해결 오류는 없다(`./gradlew test` 통과, 실제 MySQL에서 API를 직접 호출해 확인).
-- **조회 방식**: `delivery`는 `order`의 엔티티(`Order`·`OrderItem`)를 읽기만 한다(JPQL, `DeliveryQueryRepository`). 엔티티 필드명을 바꾸면 이 쿼리도 함께 확인해야 한다.
-- **테스트 실행**: `./gradlew test`(전체), `./gradlew test --tests 'com.team7.cafe.delivery.*'`(배송·통계만, 59개: 서비스 42 · 컨트롤러 10 · 리포지토리 7). 서비스·컨트롤러 테스트는 가짜 객체를 써서 DB 없이 돌고, 리포지토리 테스트만 실제 MySQL이 필요하다.
-- **`.http`**: `requests/api-check.http`의 `[배송·통계 D]` 섹션(D-1~D-4). 변수 `@statDate`(접수일)·`@shipDate`(배송일)를 접수한 주문에 맞게 바꾸고, 먼저 A11로 주문을 접수(필요하면 A16으로 취소)한 뒤 실행한다.
+- **담당 작업**: 배송·통계 API **A14·A17·A18·A24**의 Controller·Service·Repository. 그 밖에 DB 설계([docs/db-design.md](docs/db-design.md)), 공통 오류 응답·CORS, 프로젝트 설정, README.
+- **테스트**: 59개(서비스 42 · 컨트롤러 10 · 리포지토리 7).
+- **상태**: 완료
 
 ## 배송·통계 구현 규칙 (delivery, 유승민)
 명세에 없거나 프론트(`web/js/domain.js`)의 응답 검증과 맞물려 정한 규칙.
