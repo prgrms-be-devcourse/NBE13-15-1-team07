@@ -11,7 +11,7 @@ Java 21 · Spring Boot 4.1 · Gradle · MySQL · JPA. 팀 7: 유승민, 김지�
 3. 화면: `cd web && java -m jdk.httpserver -b 127.0.0.1 -p 8000` → "실제 API 연결", 서버 주소 `http://127.0.0.1:8080`
 
 ## 구조
-`global`(공통 오류·CORS·Clock) · `category` · `menu` · `order` · `delivery`(담당자가 각자 브랜치에서 추가) — 도메인별 패키지, 담당은 기획서 8장 참고.
+`global`(공통 오류·CORS·Clock) · `category` · `menu` · `order` · `delivery` — 도메인별 패키지, 담당은 기획서 8장 참고.
 DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/api-check.http`
 
 ## 개발 환경
@@ -34,7 +34,7 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 작업은 각자 `feature/<담당>/<번호>/<작업>` 브랜치에서 하고, 담당별 `*-main`에 합친 뒤 `dev`에 반영한다.
 
 ## 평가 대상
-- 브랜치: ⟨ main / dev ⟩
+- 브랜치: `main`
 - 커밋: ⟨ 제출 시점의 커밋 해시 ⟩
 
 ## 검증 방법
@@ -53,7 +53,7 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 
 ## 담당 작업·검증 (김지호 — 주문)
 - **담당 작업**: 주문 API **A11·A12·A13·A16·A22·A23**.
-- **테스트**: `ShippingPolicyTest` 7개(14시 경계). 주문 서비스·컨트롤러 테스트는 ⟨ 추가 예정 ⟩.
+- **테스트**: 15개(서비스 6 · 컨트롤러 2 · 14시 경계 `ShippingPolicyTest` 7).
 - **상태**: 완료
 
 ## 담당 작업·검증 (유승민)
