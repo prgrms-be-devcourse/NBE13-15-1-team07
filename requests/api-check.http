@@ -52,7 +52,21 @@ Content-Type: application/json
 DELETE {{baseUrl}}/api/v1/categories/{{categoryId}}
 Accept: application/json
 
-###
+################################################################################
+###심화 내용 : page
+################################################################################
+
+### P01. 페이징 기본값 조회 (200 OK)
+GET {{baseUrl}}/api/v1/categories/page
+
+### P02. 초과 페이지 빈 목록 조회 (200 OK)
+GET {{baseUrl}}/api/v1/categories/page?page=999&size=20
+
+### P03. [예외] size 최소값 미만 (400 Bad Request)
+GET {{baseUrl}}/api/v1/categories/page?size=0
+
+### P04. [예외] size 최대값 초과 (400 Bad Request)
+GET {{baseUrl}}/api/v1/categories/page?size=51
 
 ################################################################################
 ### [메뉴 B: 안형빈] 정상 케이스 A06~A10, A15, A19~A21 [2026.11.03/안형빈]
