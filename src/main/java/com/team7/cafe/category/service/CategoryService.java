@@ -2,12 +2,16 @@ package com.team7.cafe.category.service;
 
 import com.team7.cafe.category.CategoryErrorCode;
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.response.CategoryPageResponse;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
 import com.team7.cafe.global.error.ApiException;
 import com.team7.cafe.menu.repository.MenuRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +47,14 @@ public class CategoryService {
         return list.stream()
                 .map(category -> CategoryResponse.from(category))
                 .toList();
+    }
+
+    //if : category에 page기술을 도입한다면
+    public CategoryPageResponse getCategories(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Category> categoryPage = categoryRepository.findAll(pageable);
+
+        return CategoryPageResponse.from(categoryPage.map(CategoryResponse::from));
     }
 
     @Transactional
