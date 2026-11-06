@@ -334,6 +334,19 @@ Content-Type: application/json
   ]
 }
 
+### [C-페이징 1] A12 이메일별 주문 페이징 - 정상 (심화) [2026.11.06/김지호]
+# 준비 데이터: order-test@example.com 주문이 있음 (C-1 등)
+# 기대 상태: 200
+# 비교할 응답 값: content는 최근 주문부터 최대 10건(OrderSummary 5필드), number == 0, size == 10, totalElements == 이 이메일 전체 주문 수
+GET {{baseUrl}}/api/v1/orders/page?email=order-test%40example.com
+
+### [C-페이징 2] A12 이메일별 주문 페이징 - page, size 동시 위반 400 (심화) [2026.11.06/김지호]
+# 확인 목적: 두 값이 함께 틀리면 하나에서 멈추지 않고 둘 다 한 번에 알려 주는지
+#            (page=-1은 범위 위반, size=는 빈 값 위반. 빈 값은 기본값으로 채우지 않고 400)
+# 기대 상태: 400
+# 비교할 응답 값: code == "VALIDATION_ERROR", fieldErrors.page == "0 이상의 정수여야 합니다.", fieldErrors.size == "1~50 사이의 정수여야 합니다."
+GET {{baseUrl}}/api/v1/orders/page?email=order-test%40example.com&page=-1&size=
+
 ################################################################################
 ### [배송·통계 D: 유승민] 정상 케이스 A14, A17, A18, A24 [2026.11.04/유승민]
 ### 준비 데이터: 접수일 @statDate에 접수한 주문이 있어야 한다. 취소 주문이 하나 섞여 있으면 좋다. (A11 접수 → A16 취소)

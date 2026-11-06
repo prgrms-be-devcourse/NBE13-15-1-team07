@@ -2,6 +2,8 @@ package com.team7.cafe.order.repository;
 
 import com.team7.cafe.order.entity.Order;
 import com.team7.cafe.order.entity.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +19,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByEmailOrderByCreatedAtDescIdDesc(String email);
 
     Optional<Order> findFirstByEmailAndShippingDateAndStatus(String email, LocalDate shippingDate, OrderStatus status);
+
+    Page<Order> findByEmailOrderByCreatedAtDescIdDesc(String email, Pageable pageable);
 }

@@ -12,6 +12,8 @@ import com.team7.cafe.order.entity.OrderItem;
 import com.team7.cafe.order.entity.OrderStatus;
 import com.team7.cafe.order.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -53,14 +56,12 @@ public class OrderService {
         return OrderResponse.from(order);
     }
 
-    @Transactional(readOnly = true)
     public OrderResponse getOrder(Long orderId) {
         Order order = orderRepository.findWithItemsById(orderId)
                 .orElseThrow(() -> new ApiException(OrderErrorCode.ORDER_NOT_FOUND));
         return OrderResponse.from(order);
     }
 
-    @Transactional(readOnly = true)
     public List<OrderSummaryResponse> getOrders(String email) {
         return orderRepository.findByEmailOrderByCreatedAtDescIdDesc(email).stream()
                 .map(OrderSummaryResponse::from)
@@ -92,6 +93,11 @@ public class OrderService {
 
         order.changeMemo(request.memo());
         return OrderResponse.from(order);
+    }
+
+    public OrderPageResponse getOrderPage(String email, int page, int size) {
+        Page<Order> orders = orderRepository.findByEmailOrderByCreatedAtDescIdDesc(email, PageRequest.of(page, size));
+        return OrderPageResponse.from(orders.map(OrderSummaryResponse::from));
     }
 
     private Order placeOrder(String email, String address, String postcode, List<OrderItemRequest> lines) {
