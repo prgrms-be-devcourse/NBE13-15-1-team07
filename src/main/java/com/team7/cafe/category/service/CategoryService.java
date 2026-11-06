@@ -2,6 +2,7 @@ package com.team7.cafe.category.service;
 
 import com.team7.cafe.category.CategoryErrorCode;
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.request.CategoryUpdateRequest;
 import com.team7.cafe.category.dto.response.CategoryPageResponse;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
@@ -45,7 +46,7 @@ public class CategoryService {
     public List<CategoryResponse> getCategories() {
         List<Category> list = categoryRepository.findAllByOrderByIdAsc();
         return list.stream()
-                .map(category -> CategoryResponse.from(category))
+                .map(CategoryResponse::from)
                 .toList();
     }
 
@@ -58,7 +59,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryResponse updateCategory(Long categoryId, CategoryCreateRequest request){
+    public CategoryResponse updateCategory(Long categoryId, CategoryUpdateRequest request){
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND));
 

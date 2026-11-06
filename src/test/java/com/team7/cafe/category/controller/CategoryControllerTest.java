@@ -1,6 +1,7 @@
 package com.team7.cafe.category.controller;
 
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.request.CategoryUpdateRequest;
 import com.team7.cafe.category.dto.response.CategoryPageResponse;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.service.CategoryService;
@@ -88,10 +89,10 @@ class CategoryControllerTest {
         void updateCategory_success() throws Exception {
             // given
             Long categoryId = 1L;
-            CategoryCreateRequest request = new CategoryCreateRequest("디저트");
+            CategoryUpdateRequest request = new CategoryUpdateRequest("디저트");
             CategoryResponse response = new CategoryResponse(categoryId, "디저트");
 
-            given(categoryService.updateCategory(eq(categoryId), any(CategoryCreateRequest.class)))
+            given(categoryService.updateCategory(eq(categoryId), any(CategoryUpdateRequest.class)))
                     .willReturn(response);
 
             // when & then
@@ -108,7 +109,7 @@ class CategoryControllerTest {
         void updateCategory_blankName_badRequest() throws Exception {
             // given
             Long categoryId = 1L;
-            CategoryCreateRequest request = new CategoryCreateRequest("   ");
+            CategoryUpdateRequest request = new CategoryUpdateRequest("   ");
 
             // when & then
             mockMvc.perform(put("/api/v1/categories/{categoryId}", categoryId)

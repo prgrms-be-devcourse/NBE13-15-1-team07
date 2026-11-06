@@ -2,6 +2,7 @@ package com.team7.cafe.category.controller;
 
 import com.team7.cafe.category.CategoryErrorCode;
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.request.CategoryUpdateRequest;
 import com.team7.cafe.category.dto.response.CategoryPageResponse;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
@@ -69,7 +70,7 @@ public class CategoryController {
     @PutMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> updateCategory(
             @PathVariable Long categoryId,
-            @Valid @RequestBody CategoryCreateRequest request){
+            @Valid @RequestBody CategoryUpdateRequest request){
         CategoryResponse response = categoryService.updateCategory(categoryId, request);
         return ResponseEntity.ok(response);
     }
