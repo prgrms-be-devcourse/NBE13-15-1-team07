@@ -24,6 +24,12 @@ spring:
     clients:
       connect-timeout: 3s
       read-timeout: 5s
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  cache:
+    type: redis
 
 server:
   port: 8080
