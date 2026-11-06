@@ -18,8 +18,9 @@ import java.util.List;
 
 // 입력 검증(400)은 컨트롤러에서 끝난 값만 들어온다. 여기서는 404 → 409 순서로 판단한다 [2026.11.03/안형빈]
 // 저장·수정·삭제는 모든 검사를 통과한 뒤 마지막에 실행한다 [2026.11.03/안형빈]
+// 클래스 전체를 읽기 전용 트랜잭션으로 두고, 데이터를 바꾸는 메서드(등록·수정·삭제·판매 상태 변경)에만 @Transactional을 열어 준다 [2026.11.06/안형빈]
 @Service
-@Transactional
+@Transactional(readOnly = true)
 public class MenuService {
 
     private final MenuRepository menuRepository;
@@ -34,6 +35,7 @@ public class MenuService {
     }
 
     // [1] A08: 신규 메뉴 등록 [2026.11.02/안형빈]
+    @Transactional
     public MenuResponse createMenu(MenuRequest request) {
         Category category = getCategory(request.getCategoryId());
 
@@ -49,13 +51,11 @@ public class MenuService {
     }
 
     // [2] A07: 메뉴 단건 상세 조회 [2026.11.02/안형빈]
-    @Transactional(readOnly = true)
     public MenuResponse getMenuById(Long id) {
         return MenuResponse.from(getEntity(id));
     }
 
     // [3] A06: 전체 메뉴 목록 ID 오름차순 조회 [2026.11.02/안형빈]
-    @Transactional(readOnly = true)
     public List<MenuResponse> getAllMenus() {
         return menuRepository.findAllByOrderByIdAsc().stream()
                 .map(MenuResponse::from)
@@ -63,7 +63,6 @@ public class MenuService {
     }
 
     // [4] A15: 카테고리별 메뉴 목록 조회 [2026.11.02/안형빈]
-    @Transactional(readOnly = true)
     public List<MenuResponse> getMenusByCategoryId(Long categoryId) {
         if (!categoryRepository.existsById(categoryId)) {
             throw new ApiException(CategoryErrorCode.CATEGORY_NOT_FOUND);
@@ -74,6 +73,7 @@ public class MenuService {
     }
 
     // [5] A09: 메뉴 정보 수정 (메뉴 404 → 카테고리 404 순서) [2026.11.02/안형빈]
+    @Transactional
     public MenuResponse updateMenu(Long id, MenuRequest request) {
         Menu menu = getEntity(id);
         Category category = getCategory(request.getCategoryId());
@@ -83,6 +83,7 @@ public class MenuService {
     }
 
     // [6] A10: 메뉴 삭제 [2026.11.03/안형빈]
+    @Transactional
     public void deleteMenu(Long id) {
         Menu menu = getEntity(id);
 
@@ -95,7 +96,6 @@ public class MenuService {
     }
 
     // [7] A19: 판매 중(available=true) 메뉴 목록 조회 추가 [2026.11.02/안형빈]
-    @Transactional(readOnly = true)
     public List<MenuResponse> getAvailableMenus() {
         return menuRepository.findByAvailableTrueOrderByIdAsc().stream()
                 .map(MenuResponse::from)
@@ -103,7 +103,6 @@ public class MenuService {
     }
 
     // [8] A20: 메뉴명 키워드 검색 (keyword는 컨트롤러에서 trim·검증 완료) [2026.11.02/안형빈]
-    @Transactional(readOnly = true)
     public List<MenuResponse> searchMenus(String keyword) {
         return menuRepository.search(keyword).stream()
                 .map(MenuResponse::from)
@@ -111,6 +110,7 @@ public class MenuService {
     }
 
     // [9] A21: 메뉴 판매 상태 변경 [2026.11.02/안형빈]
+    @Transactional
     public MenuResponse updateAvailability(Long id, boolean available) {
         Menu menu = getEntity(id);
 
@@ -121,20 +121,17 @@ public class MenuService {
     // ---- 다른 도메인용 (카테고리: 김아리, 주문: 김지호) [2026.11.03/안형빈] ----
 
     // [10] 타 도메인용: ID로 메뉴 엔티티 조회, 없으면 404 MENU_NOT_FOUND [2026.11.03/안형빈]
-    @Transactional(readOnly = true)
     public Menu getEntity(Long id) {
         return menuRepository.findById(id)
                 .orElseThrow(() -> new ApiException(MenuErrorCode.MENU_NOT_FOUND));
     }
 
     // [11] 타 도메인용: 카테고리에 메뉴가 하나라도 있는지 (A05 CATEGORY_IN_USE 판단용) [2026.11.03/안형빈]
-    @Transactional(readOnly = true)
     public boolean existsByCategory(Long categoryId) {
         return menuRepository.existsByCategoryId(categoryId);
     }
 
     // [12] 타 도메인용: 주문 가능한 메뉴 조회 (A11, A23), 없으면 404 / 판매 중지면 409 MENU_UNAVAILABLE [2026.11.03/안형빈]
-    @Transactional(readOnly = true)
     public Menu getOrderableMenu(Long id) {
         Menu menu = getEntity(id);
         if (!menu.isAvailable()) {
