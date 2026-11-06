@@ -1,6 +1,7 @@
 package com.team7.cafe.category.service;
 
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.request.CategoryUpdateRequest;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
@@ -140,7 +141,7 @@ class CategoryServiceTest {
                 Category category = new Category("기존이름");
                 ReflectionTestUtils.setField(category, "id", categoryId);
 
-                CategoryCreateRequest request = new CategoryCreateRequest("  새이름  ");
+                CategoryUpdateRequest request = new CategoryUpdateRequest("  새이름  ");
 
                 given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
                 given(categoryRepository.existsByName("새이름")).willReturn(false);
@@ -165,7 +166,7 @@ class CategoryServiceTest {
                 Category category = new Category("커피");
                 ReflectionTestUtils.setField(category, "id", categoryId);
 
-                CategoryCreateRequest request = new CategoryCreateRequest("  커피  ");
+                CategoryUpdateRequest request = new CategoryUpdateRequest("  커피  ");
 
                 given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
 
@@ -189,7 +190,7 @@ class CategoryServiceTest {
                 Category category = new Category("커피");
                 ReflectionTestUtils.setField(category, "id", categoryId);
 
-                CategoryCreateRequest request = new CategoryCreateRequest("디저트");
+                CategoryUpdateRequest request = new CategoryUpdateRequest("디저트");
 
                 given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
                 given(categoryRepository.existsByName("디저트")).willReturn(true);
@@ -207,7 +208,7 @@ class CategoryServiceTest {
             void updateCategory_notFound_fail() {
                 // given
                 Long nonExistentId = 999L;
-                CategoryCreateRequest request = new CategoryCreateRequest("새이름");
+                CategoryUpdateRequest request = new CategoryUpdateRequest("새이름");
 
                 given(categoryRepository.findById(nonExistentId)).willReturn(Optional.empty());
 
