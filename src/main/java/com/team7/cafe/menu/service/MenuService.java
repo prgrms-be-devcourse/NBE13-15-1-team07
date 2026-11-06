@@ -12,6 +12,8 @@ import com.team7.cafe.menu.entity.Menu;
 import com.team7.cafe.menu.repository.MenuRepository;
 import com.team7.cafe.order.repository.OrderItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,10 +22,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 // 입력 검증(400)은 컨트롤러에서 끝난 값만 들어온다. 여기서는 404 → 409 순서로 판단한다 [2026.11.03/안형빈]
 // 저장·수정·삭제는 모든 검사를 통과한 뒤 마지막에 실행한다 [2026.11.03/안형빈]
 // 클래스 전체를 읽기 전용 트랜잭션으로 두고, 데이터를 바꾸는 메서드(등록·수정·삭제·판매 상태 변경)에만 @Transactional을 열어 준다 [2026.11.06/안형빈]
+// 심화 3 Redis 캐시: getAllMenus(A06)에 @Cacheable을 붙여 결과를 "menus::all" 키로 캐시한다 [2026.11.06/김지호]
+// createMenu, updateMenu, deleteMenu, updateAvailability에 @CacheEvict를 붙여 메뉴가 바뀌면 캐시를 비운다 [2026.11.06/김지호]
+// 캐시 TTL(30초)과 Redis 연결 설정은 global/config/CacheConfig에 있다 [2026.11.06/김지호]
+// getAllMenus는 Redis 역직렬화를 위해 toList() 대신 Collectors.toList()(ArrayList)로 반환한다 [2026.11.06/김지호]
 @Service
 @Transactional(readOnly = true)
 public class MenuService {
@@ -41,6 +48,7 @@ public class MenuService {
 
     // [1] A08: 신규 메뉴 등록 [2026.11.02/안형빈]
     @Transactional
+    @CacheEvict(cacheNames = "menus", allEntries = true)
     public MenuResponse createMenu(MenuRequest request) {
         Category category = getCategory(request.getCategoryId());
 
@@ -61,10 +69,12 @@ public class MenuService {
     }
 
     // [3] A06: 전체 메뉴 목록 ID 오름차순 조회 [2026.11.02/안형빈]
+    @Cacheable(cacheNames = "menus", key = "'all'")
     public List<MenuResponse> getAllMenus() {
         return menuRepository.findAllByOrderByIdAsc().stream()
                 .map(MenuResponse::from)
-                .toList();
+                // Redis 캐시에서 꺼낼 때 목록 타입 정보가 필요해 toList() 대신 ArrayList로 모은다 [2026.11.06/김지호]
+                .collect(Collectors.toList());
     }
 
     // [4] A15: 카테고리별 메뉴 목록 조회 [2026.11.02/안형빈]
@@ -79,6 +89,7 @@ public class MenuService {
 
     // [5] A09: 메뉴 정보 수정 (메뉴 404 → 카테고리 404 순서) [2026.11.02/안형빈]
     @Transactional
+    @CacheEvict(cacheNames = "menus", allEntries = true)
     public MenuResponse updateMenu(Long id, MenuRequest request) {
         Menu menu = getEntity(id);
         Category category = getCategory(request.getCategoryId());
@@ -89,6 +100,7 @@ public class MenuService {
 
     // [6] A10: 메뉴 삭제 [2026.11.03/안형빈]
     @Transactional
+    @CacheEvict(cacheNames = "menus", allEntries = true)
     public void deleteMenu(Long id) {
         Menu menu = getEntity(id);
 
@@ -116,6 +128,7 @@ public class MenuService {
 
     // [9] A21: 메뉴 판매 상태 변경 [2026.11.02/안형빈]
     @Transactional
+    @CacheEvict(cacheNames = "menus", allEntries = true)
     public MenuResponse updateAvailability(Long id, boolean available) {
         Menu menu = getEntity(id);
 
