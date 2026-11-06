@@ -135,7 +135,6 @@ public class MenuController {
         Map<String, String> errors = new LinkedHashMap<>();
         int page =  MenuValidator.page(pageStr,errors);
         int size = MenuValidator.size(sizeStr,errors);
-
         MenuValidator.throwIfAny(errors);
 
         return ResponseEntity.ok(menuService.getMenusPage(page, size));
