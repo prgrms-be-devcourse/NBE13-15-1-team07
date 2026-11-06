@@ -7,10 +7,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,5 +49,25 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.code").value("ORDER_NOT_CANCELLABLE"))
                 .andExpect(jsonPath("$.message").value("배송 대상일 14시 전의 접수 상태 주문만 취소할 수 있습니다."))
                 .andExpect(jsonPath("$.fieldErrors").isEmpty());
+    }
+
+    @Test
+    @DisplayName("주문 항목 수량을 문자열로 보내면 400 VALIDATION_ERROR이고 Service를 부르지 않는다")
+    void create_quantityAsString_returns400() throws Exception {
+        String body = """
+                {
+                "email": "order-test@example.com",
+                "address": "서울시 실습로 10 101호",
+                "postcode": "01234",
+                "items": [{ "menuId": 1, "quantity": "2"}]
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        verifyNoInteractions(orderService);
     }
 }
