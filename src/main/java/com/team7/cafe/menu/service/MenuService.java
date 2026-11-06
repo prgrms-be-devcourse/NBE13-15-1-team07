@@ -5,12 +5,17 @@ import com.team7.cafe.category.entity.Category;
 import com.team7.cafe.category.repository.CategoryRepository;
 import com.team7.cafe.global.error.ApiException;
 import com.team7.cafe.menu.MenuErrorCode;
+import com.team7.cafe.menu.dto.MenuPageResponse;
 import com.team7.cafe.menu.dto.MenuRequest;
 import com.team7.cafe.menu.dto.MenuResponse;
 import com.team7.cafe.menu.entity.Menu;
 import com.team7.cafe.menu.repository.MenuRepository;
 import com.team7.cafe.order.repository.OrderItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -116,6 +121,22 @@ public class MenuService {
 
         menu.changeAvailability(available);
         return MenuResponse.from(menu);
+    }
+
+    // [14] 심화: 메뉴 페이징 조회 (GET /menus/page) [2026.11.06/안형빈]
+    @Transactional(readOnly = true)
+    public MenuPageResponse getMenusPage(int page, int size){
+        // 1. Pageable 객체 생성 (id 기준 오름차순 정렬)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
+
+        // 2. Repository 조회 (Page<Menu> 반환)
+        Page<Menu> menuPage = menuRepository.findAll(pageable);
+
+        // 3. 엔티티 Page를 DTO Page로 변환 (Page<MenuResponse>)
+        Page<MenuResponse> menuResponsePage = menuPage.map(MenuResponse::from);
+
+        // 4. 최종 MenuPageResponse로 감싸서 반환
+        return MenuPageResponse.from(menuResponsePage);
     }
 
     // ---- 다른 도메인용 (카테고리: 김아리, 주문: 김지호) [2026.11.03/안형빈] ----
