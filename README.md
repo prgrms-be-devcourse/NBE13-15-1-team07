@@ -42,6 +42,10 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 ## 검증 방법
 - 자동 테스트: `./gradlew test` — 159개 (리포지토리 테스트는 MySQL 필요, Redis는 없어도 된다)
 - 수동 요청: `requests/api-check.http` (정상 24 + 오류 케이스 400·404·409)
+  - **기준 상태**: 서버(8080)를 띄운 직후의 깨끗한 DB(`data.sql`의 카테고리 1·2, 메뉴 1~4만 있는 상태). ID를 고정한 변수가 있어 다른 데이터가 있으면 결과가 달라진다.
+  - **변수**: 파일 맨 위 `@baseUrl`, `@categoryId`, `@menuId`, `@orderId`, `@newMenuId`, `@soldOutMenuId`, 배송·통계 섹션 위 `@statDate`(접수일), `@shipDate`(배송일). 등록 응답의 id를 해당 변수에 넣고 다음 요청을 실행한다.
+  - **실행 순서**: 카테고리(A01→A05) → 메뉴(A06→A10, 오류 1~3) → 주문(A11→A16, 오류 4~6) → 배송·통계(A17·A18·A24·A14). 섹션마다 `### 실행 순서`·`### 준비 데이터` 주석이 있다.
+  - `@statDate`·`@shipDate`는 실행한 날짜로 바꾼다. 14:00 이후 접수면 배송일은 다음 날이다.
 
 ## 선택 심화 구현
 필수 API의 경로·상태 코드·응답 형식은 그대로 두고 추가했다.
@@ -63,6 +67,14 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 **RestClient 외부 조회**
 - 기본 외부 주소 `app.outside.base-url: https://jsonplaceholder.typicode.com` (설정으로 변경 가능), 연결 3초 · 읽기 5초 (`spring.http.clients`).
 - 실패는 공통 오류 형식(`fieldErrors: {}`)으로 404·502·504를 돌려준다.
+
+## 완료·미완료 기능과 미해결 오류
+- **완료**: 필수 API 24개(A01~A24) 전부. 선택 심화 1(업무 규칙 테스트)·3(Redis 캐시)·4(메뉴 페이징)·5(RestClient 외부 조회).
+- **미완료**: 선택 심화 2(실제 DB 저장·롤백 테스트)는 구현하지 않았다.
+- **미해결 오류**
+  - 주문 접수(A11)에서 `items` 배열 안에 `null`이 들어오면(`"items": [null]`) 400이 아니라 500 `INTERNAL_ERROR`를 돌려준다.
+  - 같은 이메일·배송일로 주소가 다른 주문이 **동시에** 들어오면 둘 다 접수될 수 있다(주소 검사와 저장 사이에 잠금이 없음). 순차 요청은 409로 막힌다.
+- **알려진 제약**: Redis가 꺼져 있으면 메뉴 목록(A06)이 500이다(실행 2단계 참고).
 
 ## 담당 작업·검증 (김아리 — 카테고리)
 - **담당 작업**: 카테고리 API **A01~A05**의 Controller·Service·Repository.
