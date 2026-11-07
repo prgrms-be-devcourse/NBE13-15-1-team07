@@ -69,4 +69,54 @@ public final class MenuValidator {
             throw new ApiException(CommonErrorCode.VALIDATION_ERROR, errors);
         }
     }
+
+    // [6] 페이징 기본값·최대값 : page 기본 0, size 기본 10, size는 1~50 [2026.11.06/안형빈]
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 10;
+    private static final int MAX_SIZE = 50;
+
+    // [7] 페이지 번호 검증 : 0 이상의 정수, 미입력 시 기본값 0 [2026.11.06/안형빈]
+    public static int page (String raw, Map<String, String> errors){
+        // 값이 없거나 공백이면 기본값 반환 [2026.11.06/안형빈]
+        if (raw == null || raw.isBlank()){
+            return DEFAULT_PAGE;
+        }
+        String trimmed = trim(raw);
+
+        if(trimmed.matches("[0-9]+")){
+            try {
+                int value = Integer.parseInt(trimmed);
+                if (value >= 0) { // 페이지는 0부터 시작 [2026.11.06/안형빈]
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // int 범위를 초과하는 경우 에러 처리 [2026.11.06/안형빈]
+            }
+        }
+        errors.putIfAbsent("page", "페이지 번호는 0 이상의 정수여야 합니다.");
+        return DEFAULT_PAGE;
+    }
+
+    // [8] 페이지 크기 검증 : 1~50의 정수, 미입력 시 기본값 10 [2026.11.06/안형빈]
+    public static int size(String raw, Map<String, String> errors) {
+        // 값이 없거나 공백이면 기본값 반환 [2026.11.06/안형빈]
+        if (raw == null || raw.isBlank()) {
+            return DEFAULT_SIZE;
+        }
+
+        String trimmed = trim(raw);
+        if (trimmed.matches("[0-9]+")) {
+            try {
+                int value = Integer.parseInt(trimmed);
+                if (value >= 1 && value <= MAX_SIZE) { // 한 페이지 크기는 1~50 [2026.11.06/안형빈]
+                    return value;
+                }
+            } catch (NumberFormatException ignored) {
+                // int 범위를 초과하는 경우 에러 처리 [2026.11.06/안형빈]
+            }
+        }
+
+        errors.putIfAbsent("size", "페이지 크기는 1~" + MAX_SIZE + " 사이의 정수여야 합니다.");
+        return DEFAULT_SIZE;
+    }
 }

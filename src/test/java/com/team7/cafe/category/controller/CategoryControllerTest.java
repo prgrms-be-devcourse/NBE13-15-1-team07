@@ -1,6 +1,8 @@
 package com.team7.cafe.category.controller;
 
 import com.team7.cafe.category.dto.request.CategoryCreateRequest;
+import com.team7.cafe.category.dto.request.CategoryUpdateRequest;
+import com.team7.cafe.category.dto.response.CategoryPageResponse;
 import com.team7.cafe.category.dto.response.CategoryResponse;
 import com.team7.cafe.category.service.CategoryService;
 import org.junit.jupiter.api.DisplayName;
@@ -87,10 +89,10 @@ class CategoryControllerTest {
         void updateCategory_success() throws Exception {
             // given
             Long categoryId = 1L;
-            CategoryCreateRequest request = new CategoryCreateRequest("디저트");
+            CategoryUpdateRequest request = new CategoryUpdateRequest("디저트");
             CategoryResponse response = new CategoryResponse(categoryId, "디저트");
 
-            given(categoryService.updateCategory(eq(categoryId), any(CategoryCreateRequest.class)))
+            given(categoryService.updateCategory(eq(categoryId), any(CategoryUpdateRequest.class)))
                     .willReturn(response);
 
             // when & then
@@ -107,7 +109,7 @@ class CategoryControllerTest {
         void updateCategory_blankName_badRequest() throws Exception {
             // given
             Long categoryId = 1L;
-            CategoryCreateRequest request = new CategoryCreateRequest("   ");
+            CategoryUpdateRequest request = new CategoryUpdateRequest("   ");
 
             // when & then
             mockMvc.perform(put("/api/v1/categories/{categoryId}", categoryId)
@@ -128,6 +130,83 @@ class CategoryControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(categoryService).deleteCategory(categoryId);
+        }
+
+
+        ///
+        ///심화 : page
+        ///
+
+        @Test
+        @DisplayName("P01. 카테고리 페이징 목록 조회 - 성공 (기본값 page=0, size=20)")
+        void getCategoriesWithPage_Success_Default() throws Exception {
+            // given
+            List<CategoryResponse> content = List.of(
+                    new CategoryResponse(1L, "커피"),
+                    new CategoryResponse(2L, "논커피")
+            );
+            CategoryPageResponse pageResponse = new CategoryPageResponse(content, 0, 20, 2L, 1);
+            given(categoryService.getCategories(0, 20)).willReturn(pageResponse);
+
+            // when & then
+            mockMvc.perform(get("/api/v1/categories/page")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.number").value(0))
+                    .andExpect(jsonPath("$.size").value(20))
+                    .andExpect(jsonPath("$.totalElements").value(2))
+                    .andExpect(jsonPath("$.totalPages").value(1))
+                    .andExpect(jsonPath("$.content[0].name").value("커피"))
+                    .andExpect(jsonPath("$.content[1].name").value("논커피"));
+        }
+
+        @Test
+        @DisplayName("P02. 카테고리 페이징 목록 조회 - 성공 (파라미터 지정 page=1, size=5)")
+        void getCategoriesWithPage_Success_CustomParams() throws Exception {
+            // given
+            CategoryPageResponse pageResponse = new CategoryPageResponse(List.of(), 1, 5, 0L, 0);
+            given(categoryService.getCategories(1, 5)).willReturn(pageResponse);
+
+            // when & then
+            mockMvc.perform(get("/api/v1/categories/page")
+                            .param("page", "1")
+                            .param("size", "5")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.number").value(1))
+                    .andExpect(jsonPath("$.size").value(5))
+                    .andExpect(jsonPath("$.content").isArray())
+                    .andExpect(jsonPath("$.content").isEmpty());
+        }
+
+        @Test
+        @DisplayName("P03. 카테고리 페이징 조회 실패 - size가 최소값(1) 미만인 경우 400 Bad Request")
+        void getCategoriesWithPage_Fail_SizeUnderMin() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/categories/page")
+                            .param("size", "0")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("P04. 카테고리 페이징 조회 실패 - size가 최대값(50) 초과인 경우 400 Bad Request")
+        void getCategoriesWithPage_Fail_SizeOverMax() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/categories/page")
+                            .param("size", "51")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("P05. 카테고리 페이징 조회 실패 - page가 음수인 경우 400 Bad Request")
+        void getCategoriesWithPage_Fail_PageNegative() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/categories/page")
+                            .param("page", "-1")
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
         }
 
     }
