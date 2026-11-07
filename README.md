@@ -1,17 +1,19 @@
 # 카페 메뉴 관리 서비스 (Grids & Circle)
 
-Java 21 · Spring Boot 4.1 · Gradle · MySQL · JPA. 팀 7: 유승민, 김지호, 김아리, 안형빈.
+Java 21 · Spring Boot 4.1 · Gradle · MySQL · JPA · Redis. 팀 7: 유승민, 김지호, 김아리, 안형빈.
 
 ## 실행
 1. DB 준비: 로컬 MySQL(8.0.16 이상, 포트 3306)에서 `docs/mysql-setup.sql`을 root로 한 번 실행
    - DB `cafe` / 사용자 `cafe` / 비밀번호 `cafe1234` — 팀 공통, `application.yml` 기본값과 같음
    - 포트나 계정이 다르면 프로젝트 루트에 `.env`를 만든다(Git에 올라가지 않음). `properties` 형식이라 `KEY=값`으로만 쓰고 따옴표·`export`는 쓰지 않는다. 예: `DB_URL=jdbc:mysql://localhost:3310/cafe?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true`, 계정이 다르면 `DB_USERNAME`, `DB_PASSWORD`도 같은 방식으로 적는다.
    - `./gradlew test`의 리포지토리 테스트도 이 DB 설정을 쓰므로 MySQL이 떠 있어야 한다.
-2. `./gradlew bootRun` → API `http://127.0.0.1:8080` (시작 시 `schema.sql`, `data.sql` 적용)
-3. 화면: `cd web && java -m jdk.httpserver -b 127.0.0.1 -p 8000` → "실제 API 연결", 서버 주소 `http://127.0.0.1:8080`
+2. Redis 준비: 로컬 Redis를 `127.0.0.1:6379`로 실행 (예: `docker run -d --name redis -p 6379:6379 redis:7`)
+   - 메뉴 목록(A06)을 캐시하므로, Redis가 꺼져 있으면 A06이 500이다.
+3. `./gradlew bootRun` → API `http://127.0.0.1:8080` (시작 시 `schema.sql`, `data.sql` 적용)
+4. 화면: `cd web && java -m jdk.httpserver -b 127.0.0.1 -p 8000` → "실제 API 연결", 서버 주소 `http://127.0.0.1:8080`
 
 ## 구조
-`global`(공통 오류·CORS·Clock) · `category` · `menu` · `order` · `delivery` — 도메인별 패키지, 담당은 기획서 8장 참고.
+`global`(공통 오류·CORS·Clock·캐시) · `category` · `menu` · `order` · `delivery` · `reference`(외부 조회) — 도메인별 패키지, 담당은 기획서 8장 참고.
 DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/api-check.http`
 
 ## 개발 환경
@@ -21,7 +23,8 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 | Spring Boot | 4.1.2 |
 | 빌드 | Gradle (`./gradlew`) |
 | MySQL | 8.0.16 이상 (테스트는 8.4에서 실행) |
-| 주요 의존성 | webmvc, validation, data-jpa, mysql-connector-j |
+| Redis | 6379 포트 (메뉴 목록 캐시) |
+| 주요 의존성 | webmvc, validation, data-jpa, restclient, cache, data-redis, mysql-connector-j |
 
 ## 팀원별 담당
 | 팀원 | 담당 | 브랜치 |
@@ -34,31 +37,51 @@ DB 설계: [docs/db-design.md](docs/db-design.md) · 요청 검증: `requests/ap
 작업은 각자 `feature/<담당>/<번호>/<작업>` 브랜치에서 하고, 담당별 `*-main`에 합친 뒤 `dev`에 반영한다.
 
 ## 평가 대상
-- 브랜치: `main`
-- 커밋: ⟨ 제출 시점의 커밋 해시 ⟩
+- 브랜치: `main` (커밋 해시는 제출 폼에 적는다)
 
 ## 검증 방법
-- 자동 테스트: `./gradlew test` (리포지토리 테스트는 MySQL 필요)
-- 수동 요청: `requests/api-check.http` (정상 24 · 오류 6)
+- 자동 테스트: `./gradlew test` — 159개 (리포지토리 테스트는 MySQL 필요, Redis는 없어도 된다)
+- 수동 요청: `requests/api-check.http` (정상 24 + 오류 케이스 400·404·409)
+
+## 선택 심화 구현
+필수 API의 경로·상태 코드·응답 형식은 그대로 두고 추가했다.
+
+| 항목 | API / 코드 | 테스트 | 담당 |
+|---|---|---|---|
+| Redis 메뉴 캐시 | **A06** `GET /api/v1/menus` · `global/config/CacheConfig`, `MenuService` | 수동 확인 (아래) | 김지호 |
+| 메뉴 페이징 | `GET /api/v1/menus/page?page=0&size=10` (size 1~50, 판매 중지 포함, ID 오름차순) | `MenuControllerTest` 4개 | 안형빈 |
+| RestClient 외부 조회 | `GET /api/v1/reference/posts/{postId}` · `reference/` | `ReferencePostClientTest` 10개, `ReferenceControllerTest` 3개 | 안형빈 |
+| 목록 페이징 (팀 추가) | `/delivery-batches/page`, `/statistics/menus/page`, `/statistics/customers/page` | delivery `*Page*Test` | 유승민 |
+| | `/orders/page`, `/categories/page` | — | 김지호, 김아리 |
+| 업무 규칙 테스트 | 14:00 배송일·취소 마감 (`ShippingPolicy`) | `ShippingPolicyTest` 7개 | 김지호 |
+
+**Redis 캐시 (A06)**
+- 캐시 키 `menus::all`, 값은 JSON, TTL **30초** (`CacheConfig.CACHE_TTL`).
+- 메뉴 등록·수정·삭제·판매 상태 변경 시 `@CacheEvict`로 비워, 변경 후 첫 조회에 바로 반영된다.
+- 확인: A06을 두 번 조회하면 첫 번째만 서버 로그에 SQL이 찍힌다(`spring.jpa.show-sql: true`). 저장 값과 남은 시간은 `redis-cli GET "menus::all"`, `redis-cli TTL "menus::all"`.
+
+**RestClient 외부 조회**
+- 기본 외부 주소 `app.outside.base-url: https://jsonplaceholder.typicode.com` (설정으로 변경 가능), 연결 3초 · 읽기 5초 (`spring.http.clients`).
+- 실패는 공통 오류 형식(`fieldErrors: {}`)으로 404·502·504를 돌려준다.
 
 ## 담당 작업·검증 (김아리 — 카테고리)
 - **담당 작업**: 카테고리 API **A01~A05**의 Controller·Service·Repository.
-- **테스트**: 19개(서비스 11 · 컨트롤러 5 · 리포지토리 3).
+- **테스트**: 24개(서비스 11 · 컨트롤러 10 · 리포지토리 3).
 - **상태**: 완료
 
 ## 담당 작업·검증 (안형빈 — 메뉴)
-- **담당 작업**: 메뉴 API **A06~A10, A15, A19~A21**의 Controller·Service·Repository.
-- **테스트**: 컨트롤러 테스트 2개(`MenuControllerTest`). 서비스·리포지토리 테스트는 ⟨ 없음 / 추가 예정 ⟩.
+- **담당 작업**: 메뉴 API **A06~A10, A15, A19~A21**의 Controller·Service·Repository. 심화: 메뉴 페이징, RestClient 외부 조회.
+- **테스트**: 19개(메뉴 컨트롤러 6 · 외부 조회 13).
 - **상태**: 완료
 
 ## 담당 작업·검증 (김지호 — 주문)
-- **담당 작업**: 주문 API **A11·A12·A13·A16·A22·A23**.
-- **테스트**: 15개(서비스 6 · 컨트롤러 2 · 14시 경계 `ShippingPolicyTest` 7).
+- **담당 작업**: 주문 API **A11·A12·A13·A16·A22·A23**. 심화: Redis 메뉴 캐시, 주문 페이징.
+- **테스트**: 20개(서비스 10 · 컨트롤러 3 · 14시 경계 `ShippingPolicyTest` 7).
 - **상태**: 완료
 
 ## 담당 작업·검증 (유승민)
-- **담당 작업**: 배송·통계 API **A14·A17·A18·A24**의 Controller·Service·Repository. 그 밖에 DB 설계([docs/db-design.md](docs/db-design.md)), 공통 오류 응답·CORS, 프로젝트 설정, README.
-- **테스트**: 59개(서비스 42 · 컨트롤러 10 · 리포지토리 7).
+- **담당 작업**: 배송·통계 API **A14·A17·A18·A24**의 Controller·Service·Repository. 그 밖에 DB 설계([docs/db-design.md](docs/db-design.md)), 공통 오류 응답·CORS, 프로젝트 설정, README. 심화: 배송·통계 페이징(A14·A18·A24).
+- **테스트**: 72개(서비스 41 · 컨트롤러 15 · 리포지토리 16).
 - **상태**: 완료
 
 ## 배송·통계 구현 규칙 (delivery, 유승민)
