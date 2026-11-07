@@ -10,6 +10,7 @@ import com.team7.cafe.order.dto.OrderCreateRequest;
 import com.team7.cafe.order.dto.OrderItemRequest;
 import com.team7.cafe.order.dto.OrderResponse;
 import com.team7.cafe.order.entity.Order;
+import com.team7.cafe.order.entity.OrderItem;
 import com.team7.cafe.order.entity.OrderStatus;
 import com.team7.cafe.order.repository.OrderRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -139,6 +140,70 @@ class OrderServiceTest {
         ApiException e = assertThrows(ApiException.class, () -> serviceAt(BASE_TIME).getOrder(999L));
 
         assertEquals(OrderErrorCode.ORDER_NOT_FOUND, e.errorCode());
+    }
+
+    // ---- 심화 1: 업무 규칙 (명세 9절) ----
+
+    @Test
+    @DisplayName("배송일 13:59:59에 취소하면 성공: 상태 = CANCELLED, 취소 시각 = 13:59:59")
+    void cancel_beforeDeadline_succeeds() {
+        Order order = Order.place(EMAIL, ADDRESS, POSTCODE,
+                LocalDateTime.of(2026, 11, 4, 15, 0, 0), LocalDate.of(2026, 11, 5));
+        given(orderRepository.findWithItemsById(1L)).willReturn(Optional.of(order));
+
+        OrderResponse response = serviceAt(LocalDateTime.of(2026, 11, 5, 13, 59, 59)).cancel(1L);
+
+        assertEquals(OrderStatus.CANCELLED, response.status());
+        assertEquals("2026-11-05T13:59:59+09:00", response.cancelledAt());
+        assertEquals(OrderStatus.CANCELLED, order.getStatus());
+    }
+
+    @Test
+    @DisplayName("배송일 14:00:00에 취소하면 409 ORDER_NOT_CANCELLABLE: 상태 = PLACED 유지")
+    void cancel_atDeadline_throws409() {
+        Order order = Order.place(EMAIL, ADDRESS, POSTCODE,
+                LocalDateTime.of(2026, 11, 4, 15, 0, 0), LocalDate.of(2026, 11, 5));
+        given(orderRepository.findWithItemsById(1L)).willReturn(Optional.of(order));
+
+        ApiException e = assertThrows(ApiException.class,
+                () -> serviceAt(LocalDateTime.of(2026, 11, 5, 14, 0, 0)).cancel(1L));
+
+        assertEquals(OrderErrorCode.ORDER_NOT_CANCELLABLE, e.errorCode());
+        assertEquals(OrderStatus.PLACED, order.getStatus());
+        assertNull(order.getCancelledAt());
+    }
+
+    @Test
+    @DisplayName("마감 뒤 재취소도 성공: 취소 시각 = 처음 취소한 13:00 유지")
+    void cancel_alreadyCancelled_keepsFirstCancelledAt() {
+        Order order = Order.place(EMAIL, ADDRESS, POSTCODE,
+                LocalDateTime.of(2026, 11, 4, 15, 0, 0), LocalDate.of(2026, 11, 5));
+        order.cancel(LocalDateTime.of(2026, 11, 5, 13, 0, 0));
+        given(orderRepository.findWithItemsById(1L)).willReturn(Optional.of(order));
+
+        OrderResponse response = serviceAt(LocalDateTime.of(2026, 11, 5, 15, 0, 0)).cancel(1L);
+
+        assertEquals(OrderStatus.CANCELLED, response.status());
+        assertEquals("2026-11-05T13:00:00+09:00", response.cancelledAt());
+        assertEquals(LocalDateTime.of(2026, 11, 5, 13, 0, 0), order.getCancelledAt());
+    }
+
+    @Test
+    @DisplayName("재주문은 현재 가격(6000원)으로 새 주문을 만들고, 원본 주문은 5000원으로 보존")
+    void reorder_usesCurrentPrice_keepsOriginal() {
+        Order original = Order.place(EMAIL, ADDRESS, POSTCODE,
+                LocalDateTime.of(2026, 11, 4, 10, 0, 0), LocalDate.of(2026, 11, 4));
+        original.addItem(new OrderItem(1L, "Columbia Nariñó", 5000, 2));
+        given(orderRepository.findWithItemsById(1L)).willReturn(Optional.of(original));
+        given(menuService.getEntity(1L)).willReturn(menu(1L, "Columbia Nariñó", 6000));
+        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        OrderResponse response = serviceAt(BASE_TIME).reorder(1L);
+
+        assertEquals(6000, response.items().get(0).unitPrice());
+        assertEquals(12000, response.totalAmount());
+        assertEquals(5000, original.getItems().get(0).getUnitPrice());
+        assertEquals(10000, original.getTotalAmount());
     }
 
     private OrderService serviceAt(LocalDateTime seoulTime) {

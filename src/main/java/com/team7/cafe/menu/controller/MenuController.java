@@ -1,9 +1,6 @@
 package com.team7.cafe.menu.controller;
 
-import com.team7.cafe.menu.dto.MenuAvailabilityRequest;
-import com.team7.cafe.menu.dto.MenuRequest;
-import com.team7.cafe.menu.dto.MenuResponse;
-import com.team7.cafe.menu.dto.MenuValidator;
+import com.team7.cafe.menu.dto.*;
 import com.team7.cafe.menu.service.MenuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -126,5 +123,20 @@ public class MenuController {
         MenuValidator.throwIfAny(errors);
 
         return ResponseEntity.ok(menuService.updateAvailability(id, request.getAvailable()));
+    }
+
+    // [10] 심화: 메뉴 페이징 조회 (GET /api/v1/menus/page?page=&size=) [2026.11.06/안형빈]
+    @GetMapping("/menus/page")
+    public ResponseEntity<MenuPageResponse> getMenusPage (
+            @RequestParam(name = "page", required = false) String pageStr,
+            @RequestParam(name = "size", required = false) String sizeStr
+    ){
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        int page =  MenuValidator.page(pageStr,errors);
+        int size = MenuValidator.size(sizeStr,errors);
+        MenuValidator.throwIfAny(errors);
+
+        return ResponseEntity.ok(menuService.getMenusPage(page, size));
     }
 }

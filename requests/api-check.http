@@ -53,7 +53,21 @@ Content-Type: application/json
 DELETE {{baseUrl}}/api/v1/categories/{{categoryId}}
 Accept: application/json
 
-###
+################################################################################
+###심화 내용 : page
+################################################################################
+
+### P01. 페이징 기본값 조회 (200 OK)
+GET {{baseUrl}}/api/v1/categories/page
+
+### P02. 초과 페이지 빈 목록 조회 (200 OK)
+GET {{baseUrl}}/api/v1/categories/page?page=999&size=20
+
+### P03. [예외] size 최소값 미만 (400 Bad Request)
+GET {{baseUrl}}/api/v1/categories/page?size=0
+
+### P04. [예외] size 최대값 초과 (400 Bad Request)
+GET {{baseUrl}}/api/v1/categories/page?size=51
 
 ################################################################################
 ### [메뉴 B: 안형빈] 정상 케이스 A06~A10, A15, A19~A21 [2026.11.03/안형빈]
@@ -160,9 +174,10 @@ Content-Type: application/json
 GET {{baseUrl}}/api/v1/menus/999999
 
 ### [오류 3-준비] 주문 접수 (A11, 김지호 API) - 메뉴 @menuId를 주문에 사용 [2026.11.03/안형빈]
-# 이 요청은 아래 [오류 3]의 준비 단계다. 주문 API가 구현되기 전에는 실행할 수 없다.
-# 요청 본문 필드명은 주문 담당(김지호)의 최종 명세에 맞게 확인할 것.
+# 이 요청은 아래 [오류 3]의 준비 단계다. 반드시 [오류 3]보다 먼저 실행해 201을 확인한다. [2026.11.06/안형빈]
+# 준비 데이터: 판매 중인 메뉴 @menuId. 같은 이메일·배송일의 기존 주문과 주소가 다르면 409 ADDRESS_MISMATCH가 나므로 주소는 그대로 쓴다.
 # 기대 상태: 201 (이후 이 메뉴는 주문된 적 있는 메뉴가 된다)
+# 비교할 응답 값: status == "PLACED", items[0].menuId == @menuId, cancelledAt == null, memo == ""
 POST {{baseUrl}}/api/v1/orders
 Content-Type: application/json
 
@@ -180,6 +195,51 @@ Content-Type: application/json
 # 기대 상태: 409
 # 비교할 응답 값: code == "MENU_IN_USE", message == "주문에 사용된 메뉴는 삭제할 수 없습니다.", fieldErrors == {} (메뉴는 삭제되지 않음)
 DELETE {{baseUrl}}/api/v1/menus/{{menuId}}
+
+################################################################################
+### [메뉴 B: 안형빈] 심화 메뉴 페이징 GET /menus/page [2026.11.06/안형빈]
+### 실행 순서: [심화-1] → [심화-2] → [심화-3] (서로 독립이라 순서는 상관없다)
+### 준비 데이터: 메뉴가 3개 이상이면 size=2로 여러 페이지를 볼 수 있다. (data.sql 시드 메뉴 4개 기준)
+################################################################################
+
+### [심화-1] 메뉴 페이징 정상 조회 (page=0&size=2) [2026.11.06/안형빈]
+# 기대 상태: 200
+# 비교할 응답 값: 객체(배열 아님). content는 ID 오름차순 메뉴 최대 2개 (판매 중지 메뉴도 포함),
+#                 number == 0, size == 2, totalElements == 전체 메뉴 수, totalPages == 올림(totalElements / 2)
+GET {{baseUrl}}/api/v1/menus/page?page=0&size=2
+
+### [심화-2] 범위를 넘은 페이지 조회 (page=999) [2026.11.06/안형빈]
+# 기대 상태: 200 (오류가 아니다)
+# 비교할 응답 값: content == [], number == 999, size == 2, totalElements·totalPages는 [심화-1]과 같은 값
+GET {{baseUrl}}/api/v1/menus/page?page=999&size=2
+
+### [심화-3] size 범위 위반 - 입력 오류 400 (size=51) [2026.11.06/안형빈]
+# 기대 상태: 400
+# 비교할 응답 값: code == "VALIDATION_ERROR", message == "입력값을 확인해 주세요.", fieldErrors에 "size" 키가 있음
+GET {{baseUrl}}/api/v1/menus/page?size=51
+
+################################################################################
+### [레퍼런스 B: 안형빈] 심화 RestClient 외부 조회 GET /reference/posts/{postId} [2026.11.06/안형빈]
+### 실행 순서: [심화-R1] → [심화-R2] → [심화-R3] (서로 독립이라 순서는 상관없다)
+### 준비 데이터: 인터넷 연결이 필요하다. 기본 외부 서버는 https://jsonplaceholder.typicode.com (게시글 id 1~100).
+###   - 외부 주소는 app.outside.base-url, 연결 3초·읽기 5초 제한은 spring.http.clients.* 설정이다.
+###   - 502·504(외부 서버 오류, 연결 거절, 시간 초과)는 외부 실서비스에 오류를 일으키지 않도록 .http가 아니라 모의 서버 자동 테스트로 확인한다.
+################################################################################
+
+### [심화-R1] 외부 게시글 정상 조회 (postId=1) [2026.11.06/안형빈]
+# 기대 상태: 200
+# 비교할 응답 값: 객체. id == 1, userId == 1, title·body는 비어 있지 않은 문자열 (외부 서버가 준 값을 그대로 사용, 고정값이 아님)
+GET {{baseUrl}}/api/v1/reference/posts/1
+
+### [심화-R2] postId 형식 오류 - 입력 오류 400 (postId=0) [2026.11.06/안형빈]
+# 기대 상태: 400
+# 비교할 응답 값: code == "VALIDATION_ERROR", message == "입력값을 확인해 주세요.", fieldErrors에 "postId" 키가 있음 (외부 서버는 호출하지 않음)
+GET {{baseUrl}}/api/v1/reference/posts/0
+
+### [심화-R3] 외부에 없는 게시글 - 대상 없음 404 (postId=101) [2026.11.06/안형빈]
+# 기대 상태: 404
+# 비교할 응답 값: code == "REFERENCE_POST_NOT_FOUND", message == "외부 게시글을 찾을 수 없습니다.", fieldErrors == {}
+GET {{baseUrl}}/api/v1/reference/posts/101
 
 ################################################################################
 ### [주문 C: 김지호] 정상 케이스 A11, A13, A12, A22, A23, A16 [2026.11.04/김지호]
@@ -319,6 +379,19 @@ Content-Type: application/json
     {"menuId": {{soldOutMenuId}}, "quantity": 1}
   ]
 }
+
+### [C-페이징 1] A12 이메일별 주문 페이징 - 정상 (심화) [2026.11.06/김지호]
+# 준비 데이터: order-test@example.com 주문이 있음 (C-1 등)
+# 기대 상태: 200
+# 비교할 응답 값: content는 최근 주문부터 최대 10건(OrderSummary 5필드), number == 0, size == 10, totalElements == 이 이메일 전체 주문 수
+GET {{baseUrl}}/api/v1/orders/page?email=order-test%40example.com
+
+### [C-페이징 2] A12 이메일별 주문 페이징 - page, size 동시 위반 400 (심화) [2026.11.06/김지호]
+# 확인 목적: 두 값이 함께 틀리면 하나에서 멈추지 않고 둘 다 한 번에 알려 주는지
+#            (page=-1은 범위 위반, size=는 빈 값 위반. 빈 값은 기본값으로 채우지 않고 400)
+# 기대 상태: 400
+# 비교할 응답 값: code == "VALIDATION_ERROR", fieldErrors.page == "0 이상의 정수여야 합니다.", fieldErrors.size == "1~50 사이의 정수여야 합니다."
+GET {{baseUrl}}/api/v1/orders/page?email=order-test%40example.com&page=-1&size=
 
 ################################################################################
 ### [배송·통계 D: 유승민] 정상 케이스 A14, A17, A18, A24 [2026.11.04/유승민]

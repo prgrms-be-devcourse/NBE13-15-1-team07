@@ -2,10 +2,7 @@ package com.team7.cafe.order.controller;
 
 import com.team7.cafe.global.error.ApiException;
 import com.team7.cafe.global.error.CommonErrorCode;
-import com.team7.cafe.order.dto.OrderCreateRequest;
-import com.team7.cafe.order.dto.OrderMemoRequest;
-import com.team7.cafe.order.dto.OrderResponse;
-import com.team7.cafe.order.dto.OrderSummaryResponse;
+import com.team7.cafe.order.dto.*;
 import com.team7.cafe.order.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,6 +61,21 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.reorder(orderId));
     }
 
+    @GetMapping("/page")
+    public ResponseEntity<OrderPageResponse> getOrderPage(
+            @RequestParam("email") String email,
+            @RequestParam(value = "page", required = false) String page,
+            @RequestParam(value = "size", required = false) String size) {
+        validateEmail(email);
+        Map<String, String> errors = new LinkedHashMap<>();
+        int pageValue = parsePage(page, errors);
+        int sizeValue = parseSize(size, errors);
+        if (!errors.isEmpty()) {
+            throw new ApiException(CommonErrorCode.VALIDATION_ERROR, errors);
+        }
+        return ResponseEntity.ok(orderService.getOrderPage(email, pageValue, sizeValue));
+    }
+
     private void validateOrderId(Long orderId) {
         if (orderId < 1) {
             throw new ApiException(CommonErrorCode.VALIDATION_ERROR,
@@ -74,6 +87,38 @@ public class OrderController {
         if (email.length() > 100 || !email.matches(OrderCreateRequest.EMAIL_REGEX)) {
             throw new ApiException(CommonErrorCode.VALIDATION_ERROR,
                     Map.of("email", "이메일 형식을 확인해 주세요."));
+        }
+    }
+
+    private int parsePage(String page, Map<String, String> errors) {
+        if (page == null) {
+            return 0;
+        }
+        try {
+            int value = Integer.parseInt(page);
+            if (value < 0) {
+                errors.put("page", "0 이상의 정수여야 합니다.");
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            errors.put("page", "0 이상의 정수여야 합니다.");
+            return 0;
+        }
+    }
+
+    private int parseSize(String size, Map<String, String> errors) {
+        if (size == null) {
+            return 10;
+        }
+        try {
+            int value = Integer.parseInt(size);
+            if (value < 1 || value > 50) {
+                errors.put("size", "1~50 사이의 정수여야 합니다.");
+            }
+            return value;
+        } catch (NumberFormatException e) {
+            errors.put("size", "1~50 사이의 정수여야 합니다.");
+            return 10;
         }
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.team7.cafe.delivery.dto.DeliveryBatchResponse;
 import com.team7.cafe.delivery.dto.DeliveryItemResponse;
+import com.team7.cafe.delivery.dto.PageResponse;
 import com.team7.cafe.delivery.service.DeliveryService;
 
 /** 공통 오류 본문 변환과 405는 A17 컨트롤러 테스트에서 확인하므로 여기서는 A14 고유 응답만 본다. */
@@ -32,6 +33,27 @@ class DeliveryControllerTest {
 
     @MockitoBean
     DeliveryService deliveryService;
+
+    @Test
+    @DisplayName("/page는 200과 {content, number, size, totalElements, totalPages}를 돌려준다")
+    void batchesPage() throws Exception {
+        // given
+        when(deliveryService.findBatchesPage("2026-11-03", "1", "2")).thenReturn(new PageResponse<>(
+                List.of(new DeliveryBatchResponse(DATE, "a@x.com", "서울시 실습로 10", "01234", List.of(1L), 1,
+                        List.of(new DeliveryItemResponse(1, "Columbia", 5000, 1, 5000)), 5000, 1)),
+                1, 2, 3, 2));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/delivery-batches/page")
+                        .param("shippingDate", "2026-11-03").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].email").value("a@x.com"))
+                .andExpect(jsonPath("$.content[0].orderIds[0]").value(1))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
 
     @Test
     @DisplayName("200과 배송 묶음 배열을 돌려주고, 배송 대상이 없으면 빈 배열이다")

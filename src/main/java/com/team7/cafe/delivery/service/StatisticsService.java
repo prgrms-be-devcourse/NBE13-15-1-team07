@@ -7,13 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.team7.cafe.delivery.dto.CustomerStatisticsResponse;
 import com.team7.cafe.delivery.dto.MenuStatisticsResponse;
 import com.team7.cafe.delivery.dto.OrderStatisticsResponse;
+import com.team7.cafe.delivery.dto.PageResponse;
+import com.team7.cafe.delivery.repository.CustomerStatRow;
 import com.team7.cafe.delivery.repository.DeliveryQueryRepository;
+import com.team7.cafe.delivery.repository.MenuSumRow;
 import com.team7.cafe.delivery.repository.OrderItemRow;
 
 /** 통계 날짜는 배송일이 아니라 서울 기준 접수일(created_at의 날짜)이다. 나중에 취소해도 원래 접수일에 반영된다. */
@@ -84,6 +89,42 @@ public class StatisticsService {
                     s.placedOrders + s.cancelledOrders, s.placedOrders, s.cancelledOrders, s.quantity, s.amount));
         }
         return result;
+    }
+
+    /**
+     * A24 페이징. 같은 규칙(이메일 오름차순, 모두 취소한 고객 포함)을 DB가 한 페이지만 계산해 준다.
+     * page는 0부터, 범위를 넘기면 content가 빈 목록이다. 잘못된 date·page·size는 400이다.
+     */
+    public PageResponse<CustomerStatisticsResponse> customerStatisticsPage(String date, String page, String size) {
+        LocalDate parsed = DateParam.parse("date", date);
+        PageParam param = PageParam.parse(page, size);
+
+        Page<CustomerStatRow> rows = repository.findCustomerStatsByReceivedDate(parsed,
+                PageRequest.of(param.page(), param.size()));
+
+        List<CustomerStatisticsResponse> content = rows.getContent().stream()
+                .map(row -> new CustomerStatisticsResponse(parsed, row.email(), row.orderCount(),
+                        row.placedOrderCount(), row.orderCount() - row.placedOrderCount(),
+                        row.totalQuantity(), row.totalAmount()))
+                .toList();
+        return new PageResponse<>(content, rows.getNumber(), rows.getSize(), rows.getTotalElements(),
+                rows.getTotalPages());
+    }
+
+    /** A18 페이징. 같은 규칙(PLACED만, 메뉴 ID → 단가 → 메뉴명 순)으로 DB가 한 페이지만 계산한다. */
+    public PageResponse<MenuStatisticsResponse> menuStatisticsPage(String date, String page, String size) {
+        LocalDate parsed = DateParam.parse("date", date);
+        PageParam param = PageParam.parse(page, size);
+
+        Page<MenuSumRow> rows = repository.findMenuSumsByReceivedDate(parsed,
+                PageRequest.of(param.page(), param.size()));
+
+        List<MenuStatisticsResponse> content = rows.getContent().stream()
+                .map(row -> new MenuStatisticsResponse(row.getMenuId(), row.getMenuName(), row.getUnitPrice(),
+                        row.getTotalQuantity(), row.getTotalAmount()))
+                .toList();
+        return new PageResponse<>(content, rows.getNumber(), rows.getSize(), rows.getTotalElements(),
+                rows.getTotalPages());
     }
 
     /** 집계 결과. 주문 수는 항목 줄 수가 아니라 주문 ID 기준이고, 수량·금액은 PLACED 항목만 더한다. */

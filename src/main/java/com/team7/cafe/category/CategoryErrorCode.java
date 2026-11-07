@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 public enum CategoryErrorCode implements com.team7.cafe.global.error.ErrorCode {
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
     CATEGORY_NAME_DUPLICATED(HttpStatus.CONFLICT, "같은 이름의 카테고리가 이미 있습니다."),
-    CATEGORY_IN_USE(HttpStatus.CONFLICT, "메뉴가 등록된 카테고리는 삭제할 수 없습니다.");
+    CATEGORY_IN_USE(HttpStatus.CONFLICT, "메뉴가 등록된 카테고리는 삭제할 수 없습니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "페이지 크기는 1 이상 50 이하여야 합니다."),
+    INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "페이지 번호는 0 이상이어야 합니다.");
 
     private final HttpStatus status;
     private final String message;

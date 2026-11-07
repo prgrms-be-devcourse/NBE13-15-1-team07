@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.team7.cafe.delivery.dto.CustomerStatisticsResponse;
 import com.team7.cafe.delivery.dto.MenuStatisticsResponse;
 import com.team7.cafe.delivery.dto.OrderStatisticsResponse;
+import com.team7.cafe.delivery.dto.PageResponse;
 import com.team7.cafe.delivery.service.StatisticsService;
 
 @RestController
@@ -34,9 +35,23 @@ public class StatisticsController {
         return statisticsService.menuStatistics(date);
     }
 
+    /** A18 메뉴 통계 페이징 (심화): 기존 /menus 응답은 그대로 두고 별도 경로로 제공한다. */
+    @GetMapping("/menus/page")
+    public PageResponse<MenuStatisticsResponse> menusPage(@RequestParam String date,
+            @RequestParam(required = false) String page, @RequestParam(required = false) String size) {
+        return statisticsService.menuStatisticsPage(date, page, size);
+    }
+
     /** A24 고객 통계 */
     @GetMapping("/customers")
     public List<CustomerStatisticsResponse> customers(@RequestParam String date) {
         return statisticsService.customerStatistics(date);
+    }
+
+    /** A24 고객 통계 페이징 (심화): 기존 /customers 응답은 그대로 두고 별도 경로로 제공한다. */
+    @GetMapping("/customers/page")
+    public PageResponse<CustomerStatisticsResponse> customersPage(@RequestParam String date,
+            @RequestParam(required = false) String page, @RequestParam(required = false) String size) {
+        return statisticsService.customerStatisticsPage(date, page, size);
     }
 }
